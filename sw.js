@@ -1,7 +1,7 @@
 /* Service worker: deixa o app abrir offline depois da primeira visita.
    Estratégia: cache primeiro para os arquivos do app (são estáticos e pequenos);
    a rede só é usada para preencher o cache e para as fontes do Google. */
-var VERSAO = "mensagem-imagem-v1";
+var VERSAO = "imagem-messenger-v2";
 var ARQUIVOS = [
   "./",
   "./index.html",
