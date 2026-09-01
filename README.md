@@ -29,12 +29,16 @@ preta com fonte de terminal branca**, pronta para enviar no WhatsApp como
 
 Referência: mensagem de ~10 linhas ≈ **8 KB**; texto longo de 800 px de altura ≈ **28 KB**.
 
-## Publicar no GitHub Pages (recomendado)
+## No ar
 
-Servido por HTTPS, os botões **Baixar**, **Enviar** e **Copiar** funcionam sem restrição.
+**https://gilsonbolivar-maker.github.io/Oficina-WhatsApp-/**
 
-1. **Settings → Pages → Source: _Deploy from a branch_ → Branch: `main` / `(root)` → Save**
-2. Aguarde cerca de um minuto e acesse `https://<usuário>.github.io/Oficina-WhatsApp-/`
+Publicado pelo GitHub Pages no modo *Deploy from a branch*: cada push na branch
+publicada republica o site sozinho, sem workflow. Servido por HTTPS, os botões
+**Baixar**, **Enviar** e **Copiar** funcionam sem restrição.
+
+O arquivo `.nojekyll` na raiz garante que o conteúdo seja servido exatamente
+como está, sem o processamento do Jekyll.
 
 ### Instalar como app
 
@@ -51,6 +55,7 @@ Para publicar uma versão nova, mude `VERSAO` em `sw.js` (ex.: `-v2`) — assim 
 |---|---|
 | `index.html` | O app inteiro: interface, renderização e codificador PNG |
 | `sw.js` | Service worker — cache dos arquivos para uso offline |
+| `.nojekyll` | Desliga o processamento do Jekyll na publicação |
 | `manifest.webmanifest` | Nome, cores e ícones do app instalado |
 | `icons/` | Ícones 192, 512 (também *maskable*) e 180 (iOS) |
 
