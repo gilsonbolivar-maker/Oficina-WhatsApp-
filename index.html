@@ -5,10 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>Texto → Imagem (WhatsApp)</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Mensagem">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
 <style>
   :root{
     --bg:#000; --fg:#fff; --dim:#8a8a8a; --line:#242424; --accent:#25d366;
-    --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--fg)}
@@ -280,15 +287,23 @@
     return parseInt(document.querySelector('input[name="sz"]:checked').value, 10);
   }
 
+  function fontsReady(px) {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    return document.fonts.load(px + 'px "JetBrains Mono"').catch(function () {});
+  }
+
   function generate() {
     var text = msg.value.replace(/\s+$/, "");
     if (!text.trim()) { meta.textContent = "Digite uma mensagem primeiro."; msg.focus(); return; }
 
     btnGen.disabled = true;
     meta.textContent = "gerando...";
-    var canvas = render(text, fontSize());
+    var px = fontSize(), canvas;
 
-    toBlob(canvas).then(function (blob) {
+    fontsReady(px).then(function () {
+      canvas = render(text, px);
+      return toBlob(canvas);
+    }).then(function (blob) {
       if (current) URL.revokeObjectURL(current.url);
       var stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
       current = { blob: blob, url: URL.createObjectURL(blob), name: "msg-" + stamp + ".png" };
@@ -330,6 +345,13 @@
     a.href = current.url; a.download = current.name;
     document.body.appendChild(a); a.click(); a.remove();
   });
+
+  /* app instalável e offline quando servido por http(s) — em file:// é ignorado */
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {});
+    });
+  }
 
   btnCopy.addEventListener("click", function () {
     if (!current || !navigator.clipboard || typeof ClipboardItem === "undefined") {
