@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Texto → Imagem (WhatsApp)</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Mensagem">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --bg:#000; --fg:#fff; --dim:#8a8a8a; --line:#242424; --accent:#25d366;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg)}
+  body{font-family:var(--mono);font-size:15px;line-height:1.45;
+       padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+       max-width:760px;margin:0 auto;-webkit-text-size-adjust:100%}
+  h1{font-size:15px;font-weight:700;margin:0 0 2px;letter-spacing:.5px}
+  h1::before{content:"$ ";color:var(--accent)}
+  .sub{color:var(--dim);font-size:12px;margin:0 0 14px}
+
+  textarea{
+    width:100%;min-height:170px;resize:vertical;
+    background:#0a0a0a;color:var(--fg);border:1px solid var(--line);border-radius:10px;
+    padding:12px;font-family:var(--mono);font-size:15px;line-height:1.5;caret-color:var(--accent);
+  }
+  textarea:focus{outline:none;border-color:var(--accent)}
+
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  button{
+    font-family:var(--mono);font-size:14px;font-weight:700;
+    background:#111;color:var(--fg);border:1px solid var(--line);border-radius:10px;
+    padding:11px 14px;cursor:pointer;flex:1 1 auto;min-width:120px;
+  }
+  button:hover:not(:disabled){border-color:#3d3d3d}
+  button:disabled{opacity:.4;cursor:default}
+  button.primary{background:var(--accent);color:#000;border-color:var(--accent);flex:2 1 180px}
+
+  fieldset{border:0;padding:0;margin:12px 0 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  legend{float:left;color:var(--dim);font-size:12px;margin-right:8px;padding:0}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg label{padding:7px 12px;font-size:13px;color:var(--dim);cursor:pointer}
+  .seg input{position:absolute;opacity:0;pointer-events:none}
+  .seg input:checked + span{background:var(--fg);color:#000}
+  .seg label span{display:block;margin:-7px -12px;padding:7px 12px}
+
+  .wipe{
+    margin-left:auto;flex:0 0 auto;min-width:0;
+    background:none;border:0;padding:6px 4px;
+    font-family:var(--mono);font-size:12px;font-weight:400;color:var(--dim);cursor:pointer;
+  }
+  .wipe:hover{color:#ff7a6b}
+  .wipe[data-armed="1"]{color:#ff7a6b;font-weight:700}
+
+  #preview{margin-top:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:none}
+  #preview img{display:block;width:100%;height:auto}
+  .meta{color:var(--dim);font-size:12px;margin-top:8px;min-height:16px}
+  .hint{color:var(--dim);font-size:12px;margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+  .hint b{color:var(--fg)}
+</style>
+</head>
+<body>
+
+<h1>mensagem &rarr; imagem</h1>
+<p class="sub">fundo preto · fonte de terminal · PNG leve para "visualização única"</p>
+
+<textarea id="msg" placeholder="Digite sua mensagem aqui..." spellcheck="false" autocapitalize="sentences"></textarea>
+
+<fieldset>
+  <legend>tamanho</legend>
+  <div class="seg" id="size">
+    <label><input type="radio" name="sz" value="30"><span>P</span></label>
+    <label><input type="radio" name="sz" value="38" checked><span>M</span></label>
+    <label><input type="radio" name="sz" value="48"><span>G</span></label>
+  </div>
+  <button type="button" class="wipe" id="wipe">apagar tudo</button>
+</fieldset>
+
+<div class="row">
+  <button class="primary" id="gen">Gerar imagem</button>
+  <button id="share" disabled>Enviar</button>
+  <button id="save" disabled>Baixar</button>
+  <button id="copy" disabled>Copiar</button>
+</div>
+
+<div class="meta" id="meta"></div>
+<div id="preview"><img id="out" alt="Pré-visualização da imagem gerada"></div>
+
+<p class="hint">
+  No WhatsApp: anexe a imagem, toque no ícone <b>1</b> (visualização única) e envie.
+  Página 100% offline — nada é enviado para servidor algum.
+</p>
+
+<script>
+(function () {
+  "use strict";
+
+  var W = 1080;              // largura final da imagem (px)
+  var PAD = 64;              // margem interna
+  var LH = 1.5;              // altura de linha
+  var MAXH = 4200;           // altura máxima antes de reduzir a fonte
+  var FONT = '"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var msg = $("msg"), out = $("out"), preview = $("preview"), meta = $("meta");
+  var btnGen = $("gen"), btnShare = $("share"), btnSave = $("save"), btnCopy = $("copy");
+  var btnWipe = $("wipe");
+
+  var current = null;   // { blob, url, name }
+
+  /* ---------- rascunho ---------- */
+  try { msg.value = localStorage.getItem("draft") || ""; } catch (e) {}
+  msg.addEventListener("input", function () {
+    disarm();
+    try { localStorage.setItem("draft", msg.value); } catch (e) {}
+  });
+
+  /* ---------- apagar tudo (texto salvo + imagem gerada) ---------- */
+  var armed = false, armTimer;
+  function disarm() {
+    armed = false;
+    clearTimeout(armTimer);
+    btnWipe.textContent = "apagar tudo";
+    btnWipe.removeAttribute("data-armed");
+  }
+  function wipe() {
+    disarm();
+    msg.value = "";
+    try { localStorage.removeItem("draft"); } catch (e) {}
+    if (current) { URL.revokeObjectURL(current.url); current = null; }
+    out.removeAttribute("src");
+    preview.style.display = "none";
+    btnShare.disabled = btnSave.disabled = btnCopy.disabled = true;
+    meta.textContent = "apagado — nada guardado neste aparelho";
+    msg.focus();
+  }
+  btnWipe.addEventListener("click", function () {
+    if (!msg.value && !current) { wipe(); return; }
+    if (!armed) {
+      armed = true;
+      btnWipe.textContent = "apagar mesmo?";
+      btnWipe.setAttribute("data-armed", "1");
+      armTimer = setTimeout(disarm, 4000);
+      return;
+    }
+    wipe();
+  });
+
+  /* ---------- quebra de linha (monoespaçada) ---------- */
+  function wrap(text, maxChars) {
+    var lines = [];
+    text.replace(/\r/g, "").split("\n").forEach(function (para) {
+      if (!para.length) { lines.push(""); return; }
+      var line = "";
+      para.split(/(\s+)/).forEach(function (tk) {
+        if (!tk.length) return;
+        if (/^\s+$/.test(tk)) {                    // espaços
+          if (line.length && line.length + tk.length <= maxChars) line += tk;
+          else if (line.length) { lines.push(line); line = ""; }
+          return;
+        }
+        while (tk.length) {                        // palavras
+          var free = maxChars - line.length;
+          if (tk.length <= free) { line += tk; tk = ""; }
+          else if (tk.length <= maxChars) { lines.push(line.replace(/\s+$/, "")); line = ""; }
+          else { line += tk.slice(0, free); tk = tk.slice(free); lines.push(line); line = ""; }
+        }
+      });
+      lines.push(line.replace(/\s+$/, ""));
+    });
+    return lines;
+  }
+
+  /* ---------- desenho ---------- */
+  function draw(text, fontSize) {
+    var c = document.createElement("canvas");
+    var g = c.getContext("2d");
+    g.font = fontSize + "px " + FONT;
+    var charW = g.measureText("M").width || fontSize * 0.6;
+    var maxChars = Math.max(8, Math.floor((W - PAD * 2) / charW));
+
+    var lines = wrap(text, maxChars);
+    var lineH = Math.round(fontSize * LH);
+    var H = Math.max(320, PAD * 2 + lines.length * lineH);
+
+    c.width = W; c.height = H;
+    g = c.getContext("2d");
+    g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+    g.font = fontSize + "px " + FONT;
+    g.textBaseline = "top";
+    g.fillStyle = "#fff";
+    for (var i = 0; i < lines.length; i++) {
+      g.fillText(lines[i], PAD, PAD + i * lineH + Math.round(fontSize * 0.12));
+    }
+    return c;
+  }
+
+  function render(text, fontSize) {
+    var c = draw(text, fontSize);
+    while (c.height > MAXH && fontSize > 22) {          // auto-ajuste p/ textos longos
+      fontSize = Math.max(22, fontSize - 4);
+      c = draw(text, fontSize);
+    }
+    return c;
+  }
+
+  /* ---------- PNG 8-bit em escala de cinza (bem mais leve) ---------- */
+  var CRC = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+
+  function crc32(buf) {
+    var c = 0xFFFFFFFF;
+    for (var i = 0; i < buf.length; i++) c = CRC[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function chunk(type, data) {
+    var out = new Uint8Array(12 + data.length);
+    var dv = new DataView(out.buffer);
+    dv.setUint32(0, data.length);
+    for (var i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+    out.set(data, 8);
+    dv.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
+    return out;
+  }
+
+  function pngGray(w, h, gray) {
+    // 4 bits por pixel (16 tons de cinza): metade dos bytes e muito menos entropia
+    // que 8 bits -> arquivo bem menor, sem perda visual em texto branco no preto.
+    var bpr = (w + 1) >> 1;                               // bytes por linha
+    var raw = new Uint8Array((bpr + 1) * h);
+    var prev = new Uint8Array(bpr), cur = new Uint8Array(bpr);
+    for (var y = 0; y < h; y++) {
+      var r = y * w, o = y * (bpr + 1);
+      cur.fill(0);
+      for (var x = 0; x < w; x++) {
+        var v = gray[r + x] >> 4;                         // 0..15
+        if (x & 1) cur[x >> 1] |= v; else cur[x >> 1] = v << 4;
+      }
+      raw[o] = 2;                                         // filtro "Up"
+      for (var i = 0; i < bpr; i++) raw[o + 1 + i] = (cur[i] - prev[i]) & 0xFF;
+      prev.set(cur);
+    }
+    var cs = new CompressionStream("deflate");            // zlib (RFC1950) = formato do IDAT
+    var wr = cs.writable.getWriter(); wr.write(raw); wr.close();
+    return new Response(cs.readable).arrayBuffer().then(function (ab) {
+      var idat = new Uint8Array(ab);
+      var ihdr = new Uint8Array(13), dv = new DataView(ihdr.buffer);
+      dv.setUint32(0, w); dv.setUint32(4, h);
+      ihdr[8] = 4;                                        // 4 bits por amostra
+      ihdr[9] = 0;                                        // colorType 0 = grayscale
+      var sig = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+      var parts = [sig, chunk("IHDR", ihdr), chunk("IDAT", idat), chunk("IEND", new Uint8Array(0))];
+      return new Blob(parts, { type: "image/png" });
+    });
+  }
+
+  function toBlob(canvas) {
+    var w = canvas.width, h = canvas.height;
+    if (typeof CompressionStream === "function") {
+      try {
+        var d = canvas.getContext("2d").getImageData(0, 0, w, h).data;
+        var gray = new Uint8Array(w * h);
+        for (var i = 0, j = 0; j < gray.length; i += 4, j++) gray[j] = d[i]; // preto/branco: R=G=B
+        return pngGray(w, h, gray);
+      } catch (e) { /* cai no fallback */ }
+    }
+    return new Promise(function (res) { canvas.toBlob(res, "image/png"); });
+  }
+
+  /* ---------- ações ---------- */
+  function fontSize() {
+    return parseInt(document.querySelector('input[name="sz"]:checked').value, 10);
+  }
+
+  function fontsReady(px) {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    return document.fonts.load(px + 'px "JetBrains Mono"').catch(function () {});
+  }
+
+  function generate() {
+    var text = msg.value.replace(/\s+$/, "");
+    if (!text.trim()) { meta.textContent = "Digite uma mensagem primeiro."; msg.focus(); return; }
+
+    btnGen.disabled = true;
+    meta.textContent = "gerando...";
+    var px = fontSize(), canvas;
+
+    fontsReady(px).then(function () {
+      canvas = render(text, px);
+      return toBlob(canvas);
+    }).then(function (blob) {
+      if (current) URL.revokeObjectURL(current.url);
+      var stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
+      current = { blob: blob, url: URL.createObjectURL(blob), name: "msg-" + stamp + ".png" };
+
+      out.src = current.url;
+      preview.style.display = "block";
+      meta.textContent = canvas.width + "×" + canvas.height + " px · " + Math.max(1, Math.round(blob.size / 1024)) + " KB";
+      btnShare.disabled = btnSave.disabled = btnCopy.disabled = false;
+      btnGen.disabled = false;
+    }).catch(function (err) {
+      meta.textContent = "Erro ao gerar: " + err;
+      btnGen.disabled = false;
+    });
+  }
+
+  btnGen.addEventListener("click", generate);
+
+  // Ctrl/Cmd + Enter também gera
+  msg.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); generate(); }
+  });
+
+  // regerar ao trocar o tamanho, se já houver imagem
+  $("size").addEventListener("change", function () { if (current) generate(); });
+
+  btnShare.addEventListener("click", function () {
+    if (!current) return;
+    var file = new File([current.blob], current.name, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file] }).catch(function () {});
+    } else {
+      meta.textContent = "Compartilhamento indisponível aqui — use Baixar ou Copiar.";
+    }
+  });
+
+  btnSave.addEventListener("click", function () {
+    if (!current) return;
+    var a = document.createElement("a");
+    a.href = current.url; a.download = current.name;
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  /* app instalável e offline quando servido por http(s) — em file:// é ignorado */
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {});
+    });
+  }
+
+  btnCopy.addEventListener("click", function () {
+    if (!current || !navigator.clipboard || typeof ClipboardItem === "undefined") {
+      meta.textContent = "Copiar indisponível neste navegador."; return;
+    }
+    navigator.clipboard.write([new ClipboardItem({ "image/png": current.blob })])
+      .then(function () { meta.textContent = "Imagem copiada — cole no WhatsApp Web."; })
+      .catch(function () { meta.textContent = "Não foi possível copiar."; });
+  });
+})();
+</script>
+</body>
+</html>
