@@ -37,3 +37,4 @@ Referência: mensagem de ~10 linhas ≈ **8 KB**; texto longo de 800 px de altur
 - Quebra de linha respeita palavras e as quebras manuais; palavras enormes são cortadas sem estourar a margem.
 - Emojis saem em tons de cinza (a imagem é monocromática por definição).
 - O rascunho fica salvo no navegador (`localStorage`) até ser substituído.
+- **apagar tudo**: limpa o texto, o rascunho salvo e a imagem gerada. Pede confirmação em dois toques (o botão vira *apagar mesmo?* por 4 segundos).
