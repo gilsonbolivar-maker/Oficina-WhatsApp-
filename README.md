@@ -1,4 +1,4 @@
-# Mensagem → Imagem (WhatsApp / visualização única)
+# Imagem Messenger PixelNexo
 
 Página única (`index.html`) que transforma o texto digitado em uma **imagem PNG
 preta com fonte de terminal branca**, pronta para enviar no WhatsApp como

@@ -1,6 +1,6 @@
 {
-  "name": "Mensagem → Imagem",
-  "short_name": "Mensagem",
+  "name": "Imagem Messenger PixelNexo",
+  "short_name": "Imagem Messenger",
   "description": "Transforma a mensagem digitada em uma imagem preta com fonte de terminal, para enviar no WhatsApp como visualização única.",
   "lang": "pt-BR",
   "dir": "ltr",
