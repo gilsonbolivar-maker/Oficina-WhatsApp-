@@ -22,16 +22,17 @@
   body{font-family:var(--mono);font-size:15px;line-height:1.45;
        padding:16px 16px calc(16px + env(safe-area-inset-bottom));
        max-width:760px;margin:0 auto;-webkit-text-size-adjust:100%}
-  h1{font-size:15px;font-weight:700;margin:0 0 14px;letter-spacing:.5px}
-  h1::before{content:"$ ";color:var(--accent)}
-  .sub{color:var(--dim);font-size:12px;margin:0 0 14px}
-
   textarea{
     width:100%;min-height:170px;resize:vertical;
-    background:#0a0a0a;color:var(--fg);border:1px solid var(--line);border-radius:10px;
-    padding:12px;font-family:var(--mono);font-size:15px;line-height:1.5;caret-color:var(--accent);
+    background:#0a0a0a;color:var(--fg);border:2px solid #4d4d4d;border-radius:12px;
+    padding:13px;font-family:var(--mono);font-size:15px;line-height:1.5;caret-color:var(--accent);
+    transition:border-color .15s ease, box-shadow .15s ease;
   }
-  textarea:focus{outline:none;border-color:var(--accent)}
+  textarea:hover{border-color:#6b6b6b}
+  textarea:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(37,211,102,.18);
+  }
 
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
   button{
@@ -187,8 +188,6 @@
     </div>
   </div>
 </footer>
-
-<h1>Imagem Messenger PixelNexo</h1>
 
 <textarea id="msg" placeholder="Digite sua mensagem aqui..." spellcheck="false" autocapitalize="sentences"></textarea>
 
