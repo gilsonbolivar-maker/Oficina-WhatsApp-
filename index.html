@@ -98,7 +98,7 @@
 
   fieldset{border:0;padding:0;margin:12px 0 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   legend{float:left;color:var(--dim);font-size:12px;margin-right:8px;padding:0}
-  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg{display:flex;flex:0 0 auto;border:1px solid var(--line);border-radius:8px;overflow:hidden}
   .seg label{padding:7px 12px;font-size:13px;color:var(--dim);cursor:pointer}
   .seg input{position:absolute;opacity:0;pointer-events:none}
   .seg input:checked + span{background:var(--fg);color:#000}
@@ -262,17 +262,13 @@
 
 <div class="row">
   <button class="primary" id="gen">Gerar imagem</button>
-</div>
-
-<fieldset>
-  <legend>tamanho</legend>
-  <div class="seg" id="size">
+  <div class="seg" id="size" title="Tamanho da letra">
     <label><input type="radio" name="sz" value="30"><span>P</span></label>
     <label><input type="radio" name="sz" value="38" checked><span>M</span></label>
     <label><input type="radio" name="sz" value="48"><span>G</span></label>
   </div>
   <button type="button" class="wipe" id="wipe">apagar tudo</button>
-</fieldset>
+</div>
 
 <div class="row">
   <button id="share" disabled>Enviar</button>
