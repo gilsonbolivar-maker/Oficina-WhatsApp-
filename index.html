@@ -16,14 +16,32 @@
   :root{
     /* paleta lilás — névoa, pastel, puro, lavanda profundo, ameixa escuro */
     --nevoa:#F3E8FF; --pastel:#D8B4FE; --lilas:#C084FC; --lavanda:#9333EA; --ameixa:#581C87;
-    --bg:#120A1C; --fg:var(--nevoa); --dim:#A98FCB; --line:#3A2154; --accent:var(--lavanda);
+    --bg:#191024; --fg:var(--nevoa); --dim:#A98FCB; --line:#4A2E68; --accent:var(--lavanda);
+    /* superfícies: elevada, base e afundada */
+    --sup-alta:#30203F; --sup:#261935; --sup-baixa:#1E1429; --fundo-sombra:#0B0714;
+    --relevo:
+      0 3px 0 var(--fundo-sombra),
+      0 6px 14px -6px rgba(8,4,16,.8),
+      inset 0 1px 0 rgba(243,232,255,.16);
+    --relevo-alto:
+      0 5px 0 var(--fundo-sombra),
+      0 16px 30px -12px rgba(8,4,16,.9),
+      inset 0 1px 0 rgba(243,232,255,.18);
+    --afundado:
+      inset 0 3px 6px rgba(8,4,16,.75),
+      inset 0 -1px 0 rgba(243,232,255,.06);
+    --grad-relevo:linear-gradient(180deg,var(--sup-alta),var(--sup-baixa));
+    --grad-marca:linear-gradient(180deg,#A855F7,#8B2FE0);
+    --brilho:radial-gradient(120% 80% at 50% -10%, rgba(112,45,190,.55), transparent 70%);
     --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--fg)}
   body{font-family:var(--mono);font-size:15px;line-height:1.45;
        padding:16px 16px calc(16px + env(safe-area-inset-bottom));
-       max-width:760px;margin:0 auto;-webkit-text-size-adjust:100%}
+       max-width:760px;margin:0 auto;-webkit-text-size-adjust:100%;
+       background-image:var(--brilho);background-repeat:no-repeat;background-attachment:fixed}
+  ::selection{background:var(--lavanda);color:#fff}
   .rotulo{
     color:var(--lilas);font-size:11px;font-weight:700;
     letter-spacing:.14em;text-transform:uppercase;
@@ -31,14 +49,15 @@
   }
   textarea{
     width:100%;min-height:170px;resize:vertical;
-    background:#1A0F2B;color:var(--fg);border:2px solid var(--ameixa);border-radius:12px;
-    padding:13px;font-family:var(--mono);font-size:15px;line-height:1.5;caret-color:var(--accent);
+    background:var(--sup-baixa);color:var(--fg);border:1px solid var(--line);border-radius:16px;
+    padding:14px;font-family:var(--mono);font-size:15px;line-height:1.55;caret-color:var(--lilas);
+    box-shadow:var(--afundado);
     transition:border-color .15s ease, box-shadow .15s ease;
   }
-  textarea:hover{border-color:var(--lavanda)}
+  textarea:hover{border-color:#5E3A85}
   textarea:focus{
-    outline:none;border-color:var(--accent);
-    box-shadow:0 0 0 3px rgba(147,51,234,.28);
+    outline:none;border-color:var(--lavanda);
+    box-shadow:var(--afundado), 0 0 0 3px rgba(147,51,234,.30);
   }
 
   /* hidden precisa vencer o display das classes abaixo */
@@ -66,12 +85,12 @@
     display:flex;flex-direction:column;align-items:center;gap:5px;
     padding:7px 4px;border-radius:11px;cursor:pointer;
     font-family:var(--mono);font-size:10.5px;color:var(--dim);
-    background:linear-gradient(#281540,#180D28);
-    border:1px solid #4A2A70;
-    box-shadow:0 3px 0 #0A0412, inset 0 1px 0 rgba(243,232,255,.12);
+    background-image:var(--grad-relevo);
+    border:1px solid var(--line);
+    box-shadow:var(--relevo);
   }
-  .tema:active{transform:translateY(3px);box-shadow:0 0 0 #0A0412, inset 0 2px 4px rgba(0,0,0,.6)}
-  .tema[aria-pressed="true"]{color:var(--fg);border-color:var(--lilas);box-shadow:0 3px 0 #0A0412, inset 0 1px 0 rgba(243,232,255,.16)}
+  .tema:active{transform:translateY(3px);box-shadow:var(--afundado)}
+  .tema[aria-pressed="true"]{color:var(--fg);border-color:var(--lilas);box-shadow:var(--relevo)}
   .tema .amostra{
     width:100%;height:26px;border-radius:7px;border:1px solid #00000055;
     display:flex;align-items:center;justify-content:center;
@@ -91,25 +110,25 @@
     flex:0 0 auto;min-width:0;
     font-family:var(--mono);font-size:13px;font-weight:700;color:var(--fg);
     padding:10px 16px;border-radius:11px;cursor:pointer;
-    background:linear-gradient(#2E1A47,#1B0F2C);
-    border:1px solid #4A2A70;
-    box-shadow:0 3px 0 #0A0412, inset 0 1px 0 rgba(243,232,255,.16);
-    transition:filter .12s ease, box-shadow .08s ease, transform .08s ease;
+    background-image:var(--grad-relevo);
+    border:1px solid var(--line);
+    box-shadow:var(--relevo);
+    transition:filter .12s ease, box-shadow .09s ease, transform .09s ease;
   }
-  .bt3d:hover:not(:disabled){filter:brightness(1.18)}
+  .bt3d:hover:not(:disabled){filter:brightness(1.12)}
   .bt3d:active:not(:disabled){
     transform:translateY(3px);
-    box-shadow:0 0 0 #0A0412, inset 0 2px 4px rgba(0,0,0,.6);
+    box-shadow:var(--afundado);
   }
   .bt3d:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  .bt3d:disabled{opacity:.4;cursor:not-allowed;box-shadow:0 3px 0 #0A0412}
+  .bt3d:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
   .bt3d.largo{flex:1 1 96px;text-align:center}
   .bt3d.primary{
-    color:var(--nevoa);border-color:#7E22CE;
-    background:linear-gradient(#A855F7,#9333EA);
-    box-shadow:0 3px 0 #4C1D78, inset 0 1px 0 rgba(255,255,255,.35);
+    color:#fff;border-color:#7E22CE;
+    background-image:var(--grad-marca);
+    box-shadow:var(--relevo-alto);
   }
-  .bt3d.primary:active:not(:disabled){box-shadow:0 0 0 #4C1D78, inset 0 2px 4px rgba(0,0,0,.35)}
+  .bt3d.primary:active:not(:disabled){box-shadow:var(--afundado)}
   .bt3d.suave,
   .bt3d.apagar{color:var(--dim);font-weight:400}
   .bt3d.apagar:hover{color:#ff7a6b}
@@ -128,24 +147,24 @@
   /* ---- seletores segmentados, com o mesmo relevo ---- */
   .seg{
     display:flex;flex:0 0 auto;border-radius:11px;overflow:hidden;
-    border:1px solid #4A2A70;background:linear-gradient(#281540,#180D28);
-    box-shadow:0 3px 0 #0A0412, inset 0 1px 0 rgba(243,232,255,.12);
+    border:1px solid var(--line);background-image:var(--grad-relevo);
+    box-shadow:var(--relevo);
   }
   .seg label{position:relative;cursor:pointer}
   .seg input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
-  .seg span{display:block;padding:10px 13px;font-size:13px;color:var(--dim)}
+  .seg span{display:block;padding:10px 14px;font-size:13px;color:var(--dim);transition:color .15s ease}
   .seg input:checked ~ span{background:var(--pastel);color:#2A0D45;font-weight:700}
   .seg input:focus-visible ~ span{outline:2px solid var(--accent);outline-offset:-2px}
 
   .mini{
     width:42px;height:42px;object-fit:cover;border-radius:10px;
-    border:1px solid #4A2A70;box-shadow:0 3px 0 #0A0412;
+    border:1px solid var(--line);box-shadow:var(--relevo);
   }
 
   /* ---- painel de emojis ---- */
   .painel{
-    margin-top:8px;border:1px solid var(--line);border-radius:12px;
-    background:#170D24;overflow:hidden;
+    margin-top:8px;border:1px solid var(--line);border-radius:14px;
+    background:var(--sup-baixa);box-shadow:var(--afundado);overflow:hidden;
   }
   .abas{
     display:flex;gap:4px;padding:8px;overflow-x:auto;
@@ -166,9 +185,14 @@
     padding:6px 0;font-size:21px;line-height:1.1;cursor:pointer;
     background:transparent;border:1px solid transparent;border-radius:8px;
   }
-  .grade button:hover{background:#241238;border-color:var(--line)}
+  .grade button:hover{background:var(--sup-alta);border-color:var(--line)}
 
-  #preview{margin-top:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:none;background:#0A0412}
+  #preview{
+    margin-top:16px;padding:6px;border:1px solid var(--line);border-radius:18px;
+    background-image:var(--grad-relevo);box-shadow:var(--relevo-alto);
+    overflow:hidden;display:none;
+  }
+  #preview img{border-radius:12px}
   #preview img{display:block;width:100%;height:auto}
   .meta{color:var(--dim);font-size:12px;margin-top:10px;min-height:16px;text-align:center}
   .hint{color:var(--dim);font-size:12px;margin-top:14px;border-top:1px solid var(--line);padding-top:10px;text-align:center}
@@ -299,7 +323,7 @@
 </footer>
 
 <div class="linha topo-tema">
-  <button type="button" class="bt3d" id="btTema" aria-expanded="false" aria-controls="temas">Tema: Terminal</button>
+  <button type="button" class="bt3d" id="btTema" aria-expanded="false" aria-controls="temas">Tema da imagem: Terminal</button>
 </div>
 <div class="temas" id="temas" hidden></div>
 
@@ -369,13 +393,13 @@
   </div>
 </section>
 
-<div class="meta" id="meta"></div>
+<div class="meta" id="meta" aria-live="polite"></div>
 <div id="preview"><img id="out" alt="Pré-visualização da imagem gerada"></div>
 
 <p class="hint">
   No WhatsApp: anexe a imagem, toque no ícone <b>1</b> (visualização única) e envie.
   App 100% offline — nada é enviado para servidor algum.
-  <br><span class="versao">© 2026 Pixel Nexo · Todos os direitos reservados · versão 23</span>
+  <br><span class="versao">© 2026 Pixel Nexo · Todos os direitos reservados · versão 24</span>
 </p>
 
 <script>
@@ -629,6 +653,7 @@
     if (!text.trim()) { meta.textContent = "Digite uma mensagem primeiro."; msg.focus(); return; }
 
     btnGen.disabled = true;
+    btnGen.textContent = "Gerando...";
     meta.textContent = "gerando...";
     var px = fontSize(), canvas;
 
@@ -646,9 +671,11 @@
       meta.textContent = canvas.width + "×" + canvas.height + " px · " + Math.max(1, Math.round(blob.size / 1024)) + " KB";
       btnShare.disabled = btnSave.disabled = btnCopy.disabled = false;
       btnGen.disabled = false;
+      btnGen.textContent = "Gerar imagem";
     }).catch(function (err) {
       meta.textContent = "Erro ao gerar" + (foto ? " com a foto" : "") + ": " + err;
       btnGen.disabled = false;
+      btnGen.textContent = "Gerar imagem";
     });
   }
 
@@ -658,7 +685,7 @@
   function aplicarTema(t) {
     tema = t;
     try { localStorage.setItem("tema", t.id); } catch (e) {}
-    btTema.textContent = "Tema: " + t.nome;
+    btTema.textContent = "Tema da imagem: " + t.nome;
     [].forEach.call(caixaTemas.children, function (b) {
       b.setAttribute("aria-pressed", b.dataset.id === t.id ? "true" : "false");
     });
