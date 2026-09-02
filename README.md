@@ -85,7 +85,14 @@ vale para a imagem que você envia.
   sem foto, continua no PNG leve de sempre.
 - **remover foto** volta ao fundo preto.
 
-## Paleta da interface
+## Aparência do app
+
+O botão **Aparência**, no topo, troca as cores da interface entre quatro opções —
+Lilás (padrão), Amarelo, Verde e Branco (claro). A escolha fica salva e também
+ajusta a cor da barra do sistema no app instalado. É independente do **tema da
+imagem**, que muda apenas o que é enviado.
+
+## Paleta da interface (aparência Lilás)
 
 | Nome | Hex | Onde entra |
 |---|---|---|
