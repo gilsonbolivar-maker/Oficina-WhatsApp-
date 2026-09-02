@@ -1,7 +1,7 @@
 /* Service worker: deixa o app abrir offline depois da primeira visita.
    Estratégia: cache primeiro para os arquivos do app (são estáticos e pequenos);
    a rede só é usada para preencher o cache e para as fontes do Google. */
-var VERSAO = "imagem-messenger-v19";
+var VERSAO = "imagem-messenger-v20";
 var ARQUIVOS = [
   "./",
   "./index.html",
@@ -33,15 +33,18 @@ self.addEventListener("fetch", function (e) {
   var req = e.request;
   if (req.method !== "GET") return;
 
-  // Navegação: cache primeiro, com a rede atualizando a cópia em segundo plano.
+  // Navegação: rede primeiro, para a versão nova chegar já na primeira abertura;
+  // o cache entra quando não há internet.
   if (req.mode === "navigate") {
     e.respondWith(
-      caches.match("./index.html").then(function (hit) {
-        var rede = fetch(req).then(function (res) {
-          caches.open(VERSAO).then(function (c) { c.put("./index.html", res.clone()); });
-          return res;
-        }).catch(function () { return hit; });
-        return hit || rede;
+      fetch(req).then(function (res) {
+        var copia = res.clone();
+        caches.open(VERSAO).then(function (c) { c.put("./index.html", copia); });
+        return res;
+      }).catch(function () {
+        return caches.match("./index.html").then(function (hit) {
+          return hit || caches.match("./");
+        });
       })
     );
     return;
