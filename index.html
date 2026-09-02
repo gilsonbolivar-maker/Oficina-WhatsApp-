@@ -44,6 +44,13 @@
 
   /* ---- faixas: um assunto por linha ---- */
   .faixa{margin-top:16px}
+  /* sulco: linha escura com um fio de luz embaixo, como um vinco na superfície */
+  .faixa.sep{position:relative;margin-top:22px;padding-top:20px}
+  .faixa.sep::before{
+    content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+    box-shadow:0 1px 0 rgba(255,255,255,.09);
+  }
   .faixa .rotulo{margin-bottom:6px;text-align:center}
   .linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
   .linha + .linha{margin-top:8px}
@@ -311,7 +318,7 @@
   </div>
 </section>
 
-<section class="faixa">
+<section class="faixa sep">
   <div class="rotulo">Criar</div>
   <div class="linha">
     <button class="bt3d primary" id="gen">Gerar imagem</button>
@@ -324,7 +331,7 @@
   </div>
 </section>
 
-<section class="faixa">
+<section class="faixa sep">
   <div class="rotulo">Enviar</div>
   <div class="linha">
     <button class="bt3d suave" id="share" disabled>Enviar</button>
