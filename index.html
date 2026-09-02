@@ -83,6 +83,19 @@
   }
   .grade button:hover{background:#161616;border-color:var(--line)}
 
+  .foto-barra{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .foto-bt{flex:0 0 auto;min-width:0;padding:9px 14px;font-size:13px}
+  #tirar{margin-left:0}
+  .foto-barra .mini{
+    width:44px;height:44px;object-fit:cover;border-radius:8px;
+    border:1px solid var(--line);display:block;
+  }
+  .pos{display:flex;flex:0 0 auto;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .pos label{position:relative;cursor:pointer}
+  .pos input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+  .pos span{display:block;padding:7px 12px;font-size:12px;color:var(--dim)}
+  .pos input:checked ~ span{background:var(--fg);color:#000;font-weight:700}
+
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
   button{
     font-family:var(--mono);font-size:14px;font-weight:700;
@@ -260,6 +273,18 @@
   <div class="grade" id="grade"></div>
 </div>
 
+<div class="foto-barra">
+  <input type="file" id="arquivo" accept="image/*" hidden>
+  <button type="button" id="anexar" class="foto-bt">Anexar foto</button>
+  <img id="mini" class="mini" alt="" hidden>
+  <button type="button" class="wipe" id="tirar" hidden>remover foto</button>
+  <div class="pos" id="posicao" hidden title="Onde fica o texto sobre a foto">
+    <label><input type="radio" name="pos" value="topo"><span>topo</span></label>
+    <label><input type="radio" name="pos" value="centro" checked><span>centro</span></label>
+    <label><input type="radio" name="pos" value="rodape"><span>rodapé</span></label>
+  </div>
+</div>
+
 <div class="row">
   <button class="primary" id="gen">Gerar imagem</button>
   <div class="seg" id="size" title="Tamanho da letra">
@@ -299,7 +324,8 @@
   var btnGen = $("gen"), btnShare = $("share"), btnSave = $("save"), btnCopy = $("copy");
   var btnWipe = $("wipe");
 
-  var current = null;   // { blob, url, name }
+  var current = null;
+  var foto = null;          // <img> da foto anexada, quando houver   // { blob, url, name }
 
   /* ---------- rascunho ---------- */
   try { msg.value = localStorage.getItem("draft") || ""; } catch (e) {}
@@ -321,6 +347,7 @@
     msg.value = "";
     try { localStorage.removeItem("draft"); } catch (e) {}
     if (current) { URL.revokeObjectURL(current.url); current = null; }
+    if (foto) btnTirar.click();
     out.removeAttribute("src");
     preview.style.display = "none";
     btnShare.disabled = btnSave.disabled = btnCopy.disabled = true;
@@ -374,23 +401,54 @@
 
     var lines = wrap(text, maxChars);
     var lineH = Math.round(fontSize * LH);
-    var H = Math.max(320, PAD * 2 + lines.length * lineH);
+    var alturaTexto = PAD * 2 + lines.length * lineH;
+    var H;
+
+    if (foto) {
+      // a foto define a altura; se o texto for maior, a imagem cresce para caber
+      H = Math.max(alturaTexto, Math.round(W * foto.naturalHeight / foto.naturalWidth));
+    } else {
+      H = Math.max(320, alturaTexto);
+    }
 
     c.width = W; c.height = H;
     g = c.getContext("2d");
     g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+
+    if (foto) {
+      // preenche todo o quadro sem distorcer (recorta o excedente)
+      var escala = Math.max(W / foto.naturalWidth, H / foto.naturalHeight);
+      var lf = foto.naturalWidth * escala, af = foto.naturalHeight * escala;
+      g.drawImage(foto, (W - lf) / 2, (H - af) / 2, lf, af);
+      g.fillStyle = "rgba(0,0,0,.45)";                 // escurece para o texto branco ler bem
+      g.fillRect(0, 0, W, H);
+    }
+
+    var topo = PAD;
+    if (foto) {
+      var pos = posicaoTexto();
+      var bloco = lines.length * lineH;
+      if (pos === "centro") topo = Math.max(PAD, Math.round((H - bloco) / 2));
+      else if (pos === "rodape") topo = Math.max(PAD, H - PAD - bloco);
+    }
+
     g.font = fontSize + "px " + FONT;
     g.textBaseline = "top";
     g.fillStyle = "#fff";
-    for (var i = 0; i < lines.length; i++) {
-      g.fillText(lines[i], PAD, PAD + i * lineH + Math.round(fontSize * 0.12));
+    if (foto) {                                        // contorno suave contra fundos claros
+      g.shadowColor = "rgba(0,0,0,.85)";
+      g.shadowBlur = 10;
     }
+    for (var i = 0; i < lines.length; i++) {
+      g.fillText(lines[i], PAD, topo + i * lineH + Math.round(fontSize * 0.12));
+    }
+    g.shadowBlur = 0;
     return c;
   }
 
   function render(text, fontSize) {
     var c = draw(text, fontSize);
-    while (c.height > MAXH && fontSize > 22) {          // auto-ajuste p/ textos longos
+    while (!foto && c.height > MAXH && fontSize > 22) {          // auto-ajuste p/ textos longos
       fontSize = Math.max(22, fontSize - 4);
       c = draw(text, fontSize);
     }
@@ -457,6 +515,9 @@
 
   function toBlob(canvas) {
     var w = canvas.width, h = canvas.height;
+    if (foto) {
+      return new Promise(function (res) { canvas.toBlob(res, "image/jpeg", 0.85); });
+    }
     if (typeof CompressionStream === "function") {
       try {
         var d = canvas.getContext("2d").getImageData(0, 0, w, h).data;
@@ -497,7 +558,8 @@
     }).then(function (blob) {
       if (current) URL.revokeObjectURL(current.url);
       var stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
-      current = { blob: blob, url: URL.createObjectURL(blob), name: "msg-" + stamp + ".png" };
+      var ext = blob.type === "image/jpeg" ? ".jpg" : ".png";
+      current = { blob: blob, url: URL.createObjectURL(blob), name: "msg-" + stamp + ext };
 
       out.src = current.url;
       preview.style.display = "block";
@@ -509,6 +571,49 @@
       btnGen.disabled = false;
     });
   }
+
+  /* ---------- foto de fundo ---------- */
+  var arquivo = $("arquivo"), mini = $("mini"), caixaPos = $("posicao"), btnTirar = $("tirar");
+
+  function posicaoTexto() {
+    var sel = document.querySelector('input[name="pos"]:checked');
+    return sel ? sel.value : "centro";
+  }
+
+  $("anexar").addEventListener("click", function () { arquivo.click(); });
+
+  arquivo.addEventListener("change", function () {
+    var f = arquivo.files && arquivo.files[0];
+    if (!f) return;
+    var url = URL.createObjectURL(f);
+    var img = new Image();
+    img.onload = function () {
+      if (foto && foto.src.indexOf("blob:") === 0) URL.revokeObjectURL(foto.src);
+      foto = img;
+      mini.src = url; mini.hidden = false;
+      caixaPos.hidden = false; btnTirar.hidden = false;
+      $("anexar").textContent = "Trocar foto";
+      meta.textContent = "foto anexada — " + img.naturalWidth + "×" + img.naturalHeight + " px";
+      if (msg.value.trim()) generate();
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      meta.textContent = "Não foi possível ler essa imagem.";
+    };
+    img.src = url;
+    arquivo.value = "";                                 // permite reanexar o mesmo arquivo
+  });
+
+  btnTirar.addEventListener("click", function () {
+    if (foto && foto.src.indexOf("blob:") === 0) URL.revokeObjectURL(foto.src);
+    foto = null;
+    mini.hidden = true; mini.removeAttribute("src");
+    caixaPos.hidden = true; btnTirar.hidden = true;
+    $("anexar").textContent = "Anexar foto";
+    if (msg.value.trim()) generate(); else meta.textContent = "foto removida";
+  });
+
+  caixaPos.addEventListener("change", function () { if (current) generate(); });
 
   /* ---------- emojis ---------- */
   function inserir(emoji) {
