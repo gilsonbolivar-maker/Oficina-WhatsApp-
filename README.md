@@ -67,8 +67,8 @@ O botão **tema**, no topo, abre cinco paletas para a imagem gerada:
 |---|---|---|---|
 | Terminal | preto | branco | leve (PNG 4-bit) |
 | Papel | branco | preto | leve (PNG 4-bit) |
-| Fósforo | verde escuro | verde | PNG colorido |
-| Âmbar | quase preto | âmbar | PNG colorido |
+| Lilás | roxo escuro | lilás | PNG colorido |
+| Amarelo | quase preto | amarelo | PNG colorido |
 | Noturno | azul escuro | azul claro | PNG colorido |
 
 A escolha fica salva no navegador. A interface do app permanece escura; o tema
