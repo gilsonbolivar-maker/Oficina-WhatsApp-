@@ -39,6 +39,19 @@
     box-shadow:0 0 0 3px rgba(37,211,102,.18);
   }
 
+  .emojis{
+    display:flex;gap:6px;margin-top:8px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .emojis::-webkit-scrollbar{display:none}
+  .emojis button{
+    flex:0 0 auto;min-width:0;
+    padding:5px 8px;font-size:19px;line-height:1.1;font-weight:400;
+    background:#111;border:1px solid var(--line);border-radius:9px;
+  }
+  .emojis button:hover{border-color:#3d3d3d}
+
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
   button{
     font-family:var(--mono);font-size:14px;font-weight:700;
@@ -199,6 +212,13 @@
 
 <div class="rotulo">Mensagem</div>
 <textarea id="msg" placeholder="Digite sua mensagem aqui..." spellcheck="false" autocapitalize="sentences"></textarea>
+
+<div class="emojis" id="emojis">
+  <button type="button">👍</button><button type="button">✅</button><button type="button">❗</button
+  ><button type="button">⚠️</button><button type="button">⏰</button><button type="button">📅</button
+  ><button type="button">📍</button><button type="button">💰</button><button type="button">📞</button
+  ><button type="button">🙏</button><button type="button">👋</button><button type="button">😊</button>
+</div>
 
 <div class="row">
   <button class="primary" id="gen">Gerar imagem</button>
@@ -453,6 +473,19 @@
       btnGen.disabled = false;
     });
   }
+
+  /* barra de emojis: insere na posição do cursor, sem apagar o que já foi digitado */
+  $("emojis").addEventListener("click", function (e) {
+    var alvo = e.target.closest("button");
+    if (!alvo) return;
+    var emoji = alvo.textContent;
+    var ini = msg.selectionStart, fim = msg.selectionEnd;
+    if (typeof ini !== "number") { ini = fim = msg.value.length; }
+    msg.value = msg.value.slice(0, ini) + emoji + msg.value.slice(fim);
+    msg.selectionStart = msg.selectionEnd = ini + emoji.length;
+    msg.focus();
+    msg.dispatchEvent(new Event("input", { bubbles: true }));   // salva o rascunho
+  });
 
   btnGen.addEventListener("click", generate);
 
