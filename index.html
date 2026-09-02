@@ -325,7 +325,7 @@
   var btnWipe = $("wipe");
 
   var current = null;
-  var foto = null;          // <img> da foto anexada, quando houver   // { blob, url, name }
+  var foto = null;          // { fonte, larg, alt, url } da foto anexada, quando houver   // { blob, url, name }
 
   /* ---------- rascunho ---------- */
   try { msg.value = localStorage.getItem("draft") || ""; } catch (e) {}
@@ -406,7 +406,7 @@
 
     if (foto) {
       // a foto define a altura; se o texto for maior, a imagem cresce para caber
-      H = Math.max(alturaTexto, Math.round(W * foto.naturalHeight / foto.naturalWidth));
+      H = Math.max(alturaTexto, Math.round(W * foto.alt / foto.larg));
     } else {
       H = Math.max(320, alturaTexto);
     }
@@ -417,9 +417,9 @@
 
     if (foto) {
       // preenche todo o quadro sem distorcer (recorta o excedente)
-      var escala = Math.max(W / foto.naturalWidth, H / foto.naturalHeight);
-      var lf = foto.naturalWidth * escala, af = foto.naturalHeight * escala;
-      g.drawImage(foto, (W - lf) / 2, (H - af) / 2, lf, af);
+      var escala = Math.max(W / foto.larg, H / foto.alt);
+      var lf = foto.larg * escala, af = foto.alt * escala;
+      g.drawImage(foto.fonte, (W - lf) / 2, (H - af) / 2, lf, af);
       g.fillStyle = "rgba(0,0,0,.45)";                 // escurece para o texto branco ler bem
       g.fillRect(0, 0, W, H);
     }
@@ -567,7 +567,7 @@
       btnShare.disabled = btnSave.disabled = btnCopy.disabled = false;
       btnGen.disabled = false;
     }).catch(function (err) {
-      meta.textContent = "Erro ao gerar: " + err;
+      meta.textContent = "Erro ao gerar" + (foto ? " com a foto" : "") + ": " + err;
       btnGen.disabled = false;
     });
   }
@@ -582,30 +582,51 @@
 
   $("anexar").addEventListener("click", function () { arquivo.click(); });
 
-  arquivo.addEventListener("change", function () {
-    var f = arquivo.files && arquivo.files[0];
-    if (!f) return;
-    var url = URL.createObjectURL(f);
+  function usarFoto(fonte, larg, alt, url) {
+    if (!larg || !alt) { meta.textContent = "Essa imagem veio sem tamanho — tente outra foto."; return; }
+    if (foto && foto.url) URL.revokeObjectURL(foto.url);
+    foto = { fonte: fonte, larg: larg, alt: alt, url: url };
+    mini.src = url; mini.hidden = false;
+    caixaPos.hidden = false; btnTirar.hidden = false;
+    $("anexar").textContent = "Trocar foto";
+    meta.textContent = "foto anexada — " + larg + "×" + alt + " px";
+    if (msg.value.trim()) generate();
+  }
+
+  function porImagem(f, url) {                          // reserva: <img> comum
     var img = new Image();
-    img.onload = function () {
-      if (foto && foto.src.indexOf("blob:") === 0) URL.revokeObjectURL(foto.src);
-      foto = img;
-      mini.src = url; mini.hidden = false;
-      caixaPos.hidden = false; btnTirar.hidden = false;
-      $("anexar").textContent = "Trocar foto";
-      meta.textContent = "foto anexada — " + img.naturalWidth + "×" + img.naturalHeight + " px";
-      if (msg.value.trim()) generate();
-    };
+    img.onload = function () { usarFoto(img, img.naturalWidth, img.naturalHeight, url); };
     img.onerror = function () {
       URL.revokeObjectURL(url);
-      meta.textContent = "Não foi possível ler essa imagem.";
+      meta.textContent = "Não consegui abrir essa foto. Se ela for HEIC, tente uma foto em JPG.";
     };
     img.src = url;
+  }
+
+  arquivo.addEventListener("change", function () {
+    var f = arquivo.files && arquivo.files[0];
     arquivo.value = "";                                 // permite reanexar o mesmo arquivo
+    if (!f) return;
+    meta.textContent = "abrindo a foto...";
+    var url = URL.createObjectURL(f);
+
+    // createImageBitmap resolve orientação e formatos que o <img> às vezes recusa
+    if (typeof createImageBitmap === "function") {
+      var pedido;
+      try { pedido = createImageBitmap(f, { imageOrientation: "from-image" }); }
+      catch (e) { pedido = null; }
+      if (!pedido || !pedido.then) { try { pedido = createImageBitmap(f); } catch (e2) { pedido = null; } }
+      if (pedido && pedido.then) {
+        pedido.then(function (bmp) { usarFoto(bmp, bmp.width, bmp.height, url); })
+              .catch(function () { porImagem(f, url); });
+        return;
+      }
+    }
+    porImagem(f, url);
   });
 
   btnTirar.addEventListener("click", function () {
-    if (foto && foto.src.indexOf("blob:") === 0) URL.revokeObjectURL(foto.src);
+    if (foto && foto.url) URL.revokeObjectURL(foto.url);
     foto = null;
     mini.hidden = true; mini.removeAttribute("src");
     caixaPos.hidden = true; btnTirar.hidden = true;
