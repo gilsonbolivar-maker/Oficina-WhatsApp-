@@ -42,7 +42,10 @@
   }
   button:hover:not(:disabled){border-color:#3d3d3d}
   button:disabled{opacity:.4;cursor:default}
-  button.primary{background:var(--accent);color:#000;border-color:var(--accent);flex:1 1 100%}
+  button.primary{
+    background:var(--accent);color:#000;border-color:var(--accent);
+    flex:0 0 auto;min-width:0;padding:9px 20px;font-size:13px;border-radius:9px;
+  }
 
   fieldset{border:0;padding:0;margin:12px 0 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   legend{float:left;color:var(--dim);font-size:12px;margin-right:8px;padding:0}
@@ -396,8 +399,13 @@
       try {
         var d = canvas.getContext("2d").getImageData(0, 0, w, h).data;
         var gray = new Uint8Array(w * h);
-        for (var i = 0, j = 0; j < gray.length; i += 4, j++) gray[j] = d[i]; // preto/branco: R=G=B
-        return pngGray(w, h, gray);
+        var colorido = false;
+        for (var i = 0, j = 0; j < gray.length; i += 4, j++) {
+          if (d[i] !== d[i + 1] || d[i + 1] !== d[i + 2]) { colorido = true; break; }
+          gray[j] = d[i];                                  // texto branco no preto: R=G=B
+        }
+        // emojis trazem cor: nesse caso vale o PNG colorido, mesmo pesando mais
+        if (!colorido) return pngGray(w, h, gray);
       } catch (e) { /* cai no fallback */ }
     }
     return new Promise(function (res) { canvas.toBlob(res, "image/png"); });
