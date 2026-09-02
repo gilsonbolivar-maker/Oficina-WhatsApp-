@@ -297,7 +297,7 @@
 </footer>
 
 <div class="linha topo-tema">
-  <button type="button" class="link" id="btTema" aria-expanded="false" aria-controls="temas">tema: Terminal</button>
+  <button type="button" class="bt3d" id="btTema" aria-expanded="false" aria-controls="temas">Tema: Terminal</button>
 </div>
 <div class="temas" id="temas" hidden></div>
 
@@ -373,7 +373,7 @@
 <p class="hint">
   No WhatsApp: anexe a imagem, toque no ícone <b>1</b> (visualização única) e envie.
   App 100% offline — nada é enviado para servidor algum.
-  <br><span class="versao">versão 20</span>
+  <br><span class="versao">versão 21</span>
 </p>
 
 <script>
@@ -398,8 +398,8 @@
   var TEMAS = [
     { id: "terminal", nome: "Terminal", fundo: "#000000", texto: "#ffffff" },
     { id: "papel",    nome: "Papel",    fundo: "#ffffff", texto: "#111111" },
-    { id: "fosforo",  nome: "Fósforo",  fundo: "#001208", texto: "#4ade80" },
-    { id: "ambar",    nome: "Âmbar",    fundo: "#0d0800", texto: "#ffb000" },
+    { id: "lilas",    nome: "Lilás",    fundo: "#150a20", texto: "#c9a6ff" },
+    { id: "amarelo",  nome: "Amarelo",  fundo: "#120e00", texto: "#ffd700" },
     { id: "noturno",  nome: "Noturno",  fundo: "#0a1628", texto: "#cfe4ff" }
   ];
   var tema = TEMAS[0];
@@ -656,7 +656,7 @@
   function aplicarTema(t) {
     tema = t;
     try { localStorage.setItem("tema", t.id); } catch (e) {}
-    btTema.textContent = "tema: " + t.nome;
+    btTema.textContent = "Tema: " + t.nome;
     [].forEach.call(caixaTemas.children, function (b) {
       b.setAttribute("aria-pressed", b.dataset.id === t.id ? "true" : "false");
     });
