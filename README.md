@@ -67,7 +67,7 @@ O botão **tema**, no topo, abre cinco paletas para a imagem gerada:
 |---|---|---|---|
 | Terminal | preto | branco | leve (PNG 4-bit) |
 | Papel | branco | preto | leve (PNG 4-bit) |
-| Lilás | roxo escuro | lilás | PNG colorido |
+| Lilás | ameixa escuro `#581C87` | névoa `#F3E8FF` | PNG colorido |
 | Amarelo | quase preto | amarelo | PNG colorido |
 | Noturno | azul escuro | azul claro | PNG colorido |
 
@@ -84,6 +84,19 @@ vale para a imagem que você envia.
 - Com foto, a imagem sai em **JPEG** (qualidade 0,85), muito menor que um PNG de fotografia;
   sem foto, continua no PNG leve de sempre.
 - **remover foto** volta ao fundo preto.
+
+## Paleta da interface
+
+| Nome | Hex | Onde entra |
+|---|---|---|
+| Lilás névoa | `#F3E8FF` | texto |
+| Lilás pastel | `#D8B4FE` | seletor marcado (P/M/G, posição) |
+| Lilás puro | `#C084FC` | rótulos das faixas, aba ativa, tema escolhido |
+| Lavanda profundo | `#9333EA` | botão de gerar, foco da caixa |
+| Ameixa escuro | `#581C87` | bordas e tema Lilás da imagem |
+
+O fundo é `#120A1C`, uma base derivada da mesma família. A assinatura Pixel Nexo
+mantém o dourado da marca.
 
 ## Detalhes
 
