@@ -48,6 +48,14 @@
   .linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
   .linha + .linha{margin-top:8px}
 
+  .opcional{margin-top:10px}
+  .link{
+    background:none;border:0;padding:4px 6px;cursor:pointer;
+    font-family:var(--mono);font-size:12px;color:var(--dim);
+  }
+  .link:hover{color:var(--fg)}
+  .link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
   /* ---- botões com relevo ---- */
   .bt3d{
     flex:0 0 auto;min-width:0;
@@ -281,15 +289,19 @@
   </div>
 </section>
 
-<section class="faixa">
-  <div class="rotulo">Foto</div>
+<div class="linha opcional">
+  <input type="file" id="arquivo" accept="image/*" hidden>
+  <button type="button" class="link" id="anexar">+ foto de fundo (opcional)</button>
+</div>
+
+<section class="faixa" id="faixaFoto" hidden>
+  <div class="rotulo">Foto de fundo</div>
   <div class="linha">
-    <input type="file" id="arquivo" accept="image/*" hidden>
-    <button type="button" class="bt3d" id="anexar">Anexar foto</button>
-    <img id="mini" class="mini" alt="Foto anexada" hidden>
-    <button type="button" class="bt3d" id="tirar" hidden>Remover</button>
+    <img id="mini" class="mini" alt="Foto anexada">
+    <button type="button" class="bt3d" id="trocar">Trocar</button>
+    <button type="button" class="bt3d" id="tirar">Remover</button>
   </div>
-  <div class="linha" id="posicao" hidden>
+  <div class="linha">
     <div class="seg" title="Onde fica o texto sobre a foto">
       <label><input type="radio" name="pos" value="topo"><span>topo</span></label>
       <label><input type="radio" name="pos" value="centro" checked><span>centro</span></label>
@@ -592,7 +604,7 @@
   }
 
   /* ---------- foto de fundo ---------- */
-  var arquivo = $("arquivo"), mini = $("mini"), caixaPos = $("posicao"), btnTirar = $("tirar");
+  var arquivo = $("arquivo"), mini = $("mini"), faixaFoto = $("faixaFoto"), btnTirar = $("tirar");
 
   function posicaoTexto() {
     var sel = document.querySelector('input[name="pos"]:checked');
@@ -600,14 +612,15 @@
   }
 
   $("anexar").addEventListener("click", function () { arquivo.click(); });
+  $("trocar").addEventListener("click", function () { arquivo.click(); });
 
   function usarFoto(fonte, larg, alt, url) {
     if (!larg || !alt) { meta.textContent = "Essa imagem veio sem tamanho — tente outra foto."; return; }
     if (foto && foto.url) URL.revokeObjectURL(foto.url);
     foto = { fonte: fonte, larg: larg, alt: alt, url: url };
-    mini.src = url; mini.hidden = false;
-    caixaPos.hidden = false; btnTirar.hidden = false;
-    $("anexar").textContent = "Trocar foto";
+    mini.src = url;
+    faixaFoto.hidden = false;
+    $("anexar").hidden = true;
     meta.textContent = "foto anexada — " + larg + "×" + alt + " px";
     if (msg.value.trim()) generate();
   }
@@ -647,13 +660,13 @@
   btnTirar.addEventListener("click", function () {
     if (foto && foto.url) URL.revokeObjectURL(foto.url);
     foto = null;
-    mini.hidden = true; mini.removeAttribute("src");
-    caixaPos.hidden = true; btnTirar.hidden = true;
-    $("anexar").textContent = "Anexar foto";
+    mini.removeAttribute("src");
+    faixaFoto.hidden = true;
+    $("anexar").hidden = false;
     if (msg.value.trim()) generate(); else meta.textContent = "foto removida";
   });
 
-  caixaPos.addEventListener("change", function () { if (current) generate(); });
+  faixaFoto.addEventListener("change", function () { if (current) generate(); });
 
   /* ---------- emojis ---------- */
   function inserir(emoji) {
