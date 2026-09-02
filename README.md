@@ -65,6 +65,6 @@ Para publicar uma versão nova, mude `VERSAO` em `sw.js` (ex.: `-v2`) — assim 
 - **Fonte**: JetBrains Mono, com as monoespaçadas do sistema como reserva (SF Mono / Menlo / Consolas / DejaVu Sans Mono). A imagem só é desenhada depois que a fonte carrega, para o resultado ser igual em qualquer aparelho.
 - **Tamanhos** P / M / G; textos muito longos reduzem a fonte automaticamente para não gerar imagens gigantes.
 - Quebra de linha respeita palavras e as quebras manuais; palavras enormes são cortadas sem estourar a margem.
-- Emojis: barra de atalho abaixo da caixa (insere na posição do cursor) ou o teclado do aparelho. Quando a mensagem tem cor, a imagem sai como PNG colorido (mais pesado); sem cor, continua no PNG de 4 bits em escala de cinza.
+- Emojis: barra de atalho abaixo da caixa e seletor completo no botão **mais** — mais de 600 emojis em oito categorias, inseridos na posição do cursor. O teclado do aparelho também funciona. Quando a mensagem tem cor, a imagem sai como PNG colorido (mais pesado); sem cor, continua no PNG de 4 bits em escala de cinza.
 - O rascunho fica salvo no navegador (`localStorage`) até ser substituído.
 - **apagar tudo**: limpa o texto, o rascunho salvo e a imagem gerada. Pede confirmação em dois toques (o botão vira *apagar mesmo?* por 4 segundos).

@@ -39,8 +39,9 @@
     box-shadow:0 0 0 3px rgba(37,211,102,.18);
   }
 
+  .linha-emojis{display:flex;gap:6px;align-items:center;margin-top:8px}
   .emojis{
-    display:flex;gap:6px;margin-top:8px;
+    display:flex;gap:6px;flex:1 1 auto;min-width:0;
     overflow-x:auto;-webkit-overflow-scrolling:touch;
     scrollbar-width:none;
   }
@@ -51,6 +52,36 @@
     background:#111;border:1px solid var(--line);border-radius:9px;
   }
   .emojis button:hover{border-color:#3d3d3d}
+  .mais{
+    flex:0 0 auto;min-width:0;padding:6px 12px;
+    font-size:12px;font-weight:700;color:var(--dim);
+    background:#111;border:1px solid var(--line);border-radius:9px;
+  }
+  .mais[aria-expanded="true"]{color:#FFD700;border-color:#FFD70055}
+
+  .painel{
+    margin-top:8px;border:1px solid var(--line);border-radius:12px;
+    background:#0a0a0a;overflow:hidden;
+  }
+  .abas{
+    display:flex;gap:4px;padding:8px;overflow-x:auto;
+    border-bottom:1px solid var(--line);scrollbar-width:none;
+  }
+  .abas::-webkit-scrollbar{display:none}
+  .abas button{
+    flex:0 0 auto;min-width:0;padding:6px 11px;border-radius:8px;
+    font-size:12px;font-weight:400;color:var(--dim);background:transparent;border:1px solid transparent;
+  }
+  .abas button[aria-selected="true"]{color:#000;background:#FFD700;font-weight:700}
+  .grade{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));
+    gap:4px;padding:8px;max-height:210px;overflow-y:auto;
+  }
+  .grade button{
+    flex:none;min-width:0;padding:6px 0;font-size:21px;line-height:1.1;font-weight:400;
+    background:transparent;border:1px solid transparent;border-radius:8px;
+  }
+  .grade button:hover{background:#161616;border-color:var(--line)}
 
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
   button{
@@ -213,11 +244,20 @@
 <div class="rotulo">Mensagem</div>
 <textarea id="msg" placeholder="Digite sua mensagem aqui..." spellcheck="false" autocapitalize="sentences"></textarea>
 
+<div class="linha-emojis">
 <div class="emojis" id="emojis">
   <button type="button">👍</button><button type="button">✅</button><button type="button">❗</button
   ><button type="button">⚠️</button><button type="button">⏰</button><button type="button">📅</button
   ><button type="button">📍</button><button type="button">💰</button><button type="button">📞</button
-  ><button type="button">🙏</button><button type="button">👋</button><button type="button">😊</button>
+  ><button type="button">🙏</button><button type="button">👋</button><button type="button">😊</button
+  >
+</div>
+<button type="button" class="mais" id="mais" aria-expanded="false" aria-controls="painel">mais</button>
+</div>
+
+<div class="painel" id="painel" hidden>
+  <div class="abas" id="abas" role="tablist"></div>
+  <div class="grade" id="grade"></div>
 </div>
 
 <div class="row">
@@ -474,17 +514,71 @@
     });
   }
 
-  /* barra de emojis: insere na posição do cursor, sem apagar o que já foi digitado */
-  $("emojis").addEventListener("click", function (e) {
-    var alvo = e.target.closest("button");
-    if (!alvo) return;
-    var emoji = alvo.textContent;
+  /* ---------- emojis ---------- */
+  function inserir(emoji) {
     var ini = msg.selectionStart, fim = msg.selectionEnd;
     if (typeof ini !== "number") { ini = fim = msg.value.length; }
     msg.value = msg.value.slice(0, ini) + emoji + msg.value.slice(fim);
     msg.selectionStart = msg.selectionEnd = ini + emoji.length;
     msg.focus();
     msg.dispatchEvent(new Event("input", { bubbles: true }));   // salva o rascunho
+  }
+
+  $("emojis").addEventListener("click", function (e) {
+    var alvo = e.target.closest("button");
+    if (!alvo || alvo.id === "mais") return;
+    inserir(alvo.textContent);
+  });
+
+  var CATEGORIAS = [
+    { nome: "Rostos", itens: "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😙 😋 😛 😜 🤪 😝 🤗 🤭 🤫 🤔 🤐 😐 😑 😶 😏 😒 🙄 😬 😮 😯 😲 🥱 😴 🤤 😪 😵 🤯 🤠 🥳 😎 🤓 🧐 😕 😟 🙁 😮‍💨 😢 😭 😤 😠 😡 🤬 😳 🥺 😨 😰 😥 😓 🤥 🤒 🤕 🤧 😷 🤢 🤮 🥵 🥶 😈 💀 👻 🤖" },
+    { nome: "Gestos", itens: "👍 👎 👌 🤌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐️ 🖖 👋 🤝 🙏 ✍️ 💪 🦾 👏 🙌 👐 🤲 🫶 💅 👀 👁️ 👣 🧠 🫀 🗣️ 👤 👥 🧑 👩 👨 👵 👴 👶 🧒 👮 🕵️ 💂 👷 🧑‍🔧 🧑‍🍳 🧑‍⚕️ 🧑‍🏫 🧑‍💻 🤵 👰 🎅 🦸 🦹 🧙" },
+    { nome: "Símbolos", itens: "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 ✅ ☑️ ✔️ ❌ ❎ ⭕ 🚫 ⛔ ❗ ❕ ❓ ❔ ⚠️ 🔥 ⭐ 🌟 ✨ ⚡ 💥 💯 🔔 🔕 🔒 🔓 🔑 ⏰ ⏳ ⌛ 🕐 📅 📆 🗓️ ♻️ 🆗 🆕 🆙 🔝 🔜 ➡️ ⬅️ ⬆️ ⬇️ 🔄 ▶️ ⏸️ ⏹️ ➕ ➖ ✖️ ➗ 🟢 🟡 🔴 🔵 ⚫ ⚪" },
+    { nome: "Trabalho", itens: "💰 💵 💴 💶 💷 💸 💳 🧾 🪙 📈 📉 📊 📋 📌 📍 📎 🖇️ 📏 📐 ✂️ 🗂️ 📁 📂 🗃️ 🗄️ 📝 ✏️ 🖊️ 🖋️ 🖌️ 📖 📚 📓 📔 📒 📕 📗 📘 📙 🔖 📰 🗞️ 💼 🏢 🏭 🏦 🏪 🏬 🔧 🔨 🛠️ ⚙️ 🔩 🧰 🪛 🪚 🧲 🔌 🔋 💡 🕯️ 🧪 🔬 🔭 📡 🖥️ 💻 ⌨️ 🖱️ 🖨️ 📱 ☎️ 📞 📲 📟 📠 📧 📨 📩 📤 📥 📦 🚚 ✉️" },
+    { nome: "Comida", itens: "☕ 🍵 🧉 🥤 🧃 🍺 🍻 🥂 🍷 🥃 🍸 🍾 🧊 🍽️ 🍴 🥄 🍞 🥐 🥖 🥯 🥞 🧇 🧀 🥚 🍳 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🌮 🌯 🥗 🥘 🍝 🍜 🍲 🍛 🍣 🍱 🥟 🍤 🍚 🍙 🥠 🍦 🍰 🎂 🧁 🥧 🍫 🍬 🍭 🍩 🍪 🌰 🥜 🍎 🍏 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🥑 🥦 🥕 🌽 🌶️ 🥔" },
+    { nome: "Lugares", itens: "🏠 🏡 🏘️ 🏚️ 🏗️ 🏛️ ⛪ 🕌 🛕 🕍 ⛩️ 🏰 🏯 🏟️ 🎡 🎢 🎠 ⛲ ⛱️ 🏖️ 🏝️ 🏜️ 🌋 ⛰️ 🏔️ 🗻 🏕️ ⛺ 🛤️ 🛣️ 🌁 🌉 🗼 🗽 🎇 🎆 🌃 🌆 🌇 🌅 🌄 🌠 🚗 🚕 🚙 🚌 🚑 🚒 🚓 🏍️ 🛵 🚲 🛴 ✈️ 🚀 🛸 🚁 ⛵ 🚢 ⛽ 🚦 🚧 🗺️ 🧭" },
+    { nome: "Natureza", itens: "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🙈 🙉 🙊 🐔 🐧 🐦 🐤 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🐛 🦋 🐌 🐞 🐜 🕷️ 🦂 🐢 🐍 🦎 🐙 🦑 🦐 🦞 🦀 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐘 🦒 🦓 🐄 🐓 🕊️ 🌵 🎄 🌲 🌳 🌴 🌱 🌿 ☘️ 🍀 🎍 🍃 🍂 🍁 🌾 💐 🌷 🌹 🌺 🌸 🌼 🌻 ☀️ 🌤️ ⛅ ☁️ 🌧️ ⛈️ 🌩️ ❄️ ⛄ 🌊 💧 🌙 🌎 🌍" },
+    { nome: "Festa", itens: "🎉 🎊 🎈 🎁 🎀 🪅 🎂 🍰 🥳 🎵 🎶 🎤 🎧 🎼 🎹 🥁 🎸 🎺 🎷 🪗 🎻 🎬 🎭 🎨 🎯 🎳 🎮 🕹️ 🎲 ♟️ 🧩 🏆 🥇 🥈 🥉 🏅 ⚽ 🏀 🏈 ⚾ 🎾 🏐 🏉 🎱 🏓 🏸 🥊 🛹 🏂 ⛷️ 🏄 🚴 🏋️ 🤸 🧘 ⛳ 🎣 🎿 🪁 🧨 🕶️ 👗 👕 👖 🧥 👞 👟 🎩 🧢 💍 👜 🎒 ⌚" }
+  ];
+
+  var abas = $("abas"), grade = $("grade"), painel = $("painel"), btnMais = $("mais");
+
+  function mostrarCategoria(indice) {
+    [].forEach.call(abas.children, function (aba, i) {
+      aba.setAttribute("aria-selected", i === indice ? "true" : "false");
+    });
+    grade.innerHTML = "";
+    CATEGORIAS[indice].itens.split(" ").forEach(function (emoji) {
+      if (!emoji) return;
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = emoji;
+      grade.appendChild(b);
+    });
+    grade.scrollTop = 0;
+  }
+
+  CATEGORIAS.forEach(function (cat, i) {
+    var aba = document.createElement("button");
+    aba.type = "button";
+    aba.textContent = cat.nome;
+    aba.setAttribute("role", "tab");
+    aba.setAttribute("aria-selected", i === 0 ? "true" : "false");
+    aba.addEventListener("click", function () { mostrarCategoria(i); });
+    abas.appendChild(aba);
+  });
+
+  grade.addEventListener("click", function (e) {
+    var alvo = e.target.closest("button");
+    if (alvo) inserir(alvo.textContent);
+  });
+
+  btnMais.addEventListener("click", function () {
+    var aberto = painel.hidden;
+    painel.hidden = !aberto;
+    btnMais.setAttribute("aria-expanded", aberto ? "true" : "false");
+    btnMais.textContent = aberto ? "fechar" : "mais";
+    if (aberto && !grade.children.length) mostrarCategoria(0);
   });
 
   btnGen.addEventListener("click", generate);
