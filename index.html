@@ -55,6 +55,27 @@
   .linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
   .linha + .linha{margin-top:8px}
 
+  .topo-tema{margin:12px 0 4px}
+  .temas{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(66px,1fr));
+    gap:8px;margin:0 0 14px;
+  }
+  .tema{
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    padding:7px 4px;border-radius:11px;cursor:pointer;
+    font-family:var(--mono);font-size:10.5px;color:var(--dim);
+    background:linear-gradient(#232323,#141414);
+    border:1px solid #3a3a3a;
+    box-shadow:0 3px 0 #050505, inset 0 1px 0 rgba(255,255,255,.10);
+  }
+  .tema:active{transform:translateY(3px);box-shadow:0 0 0 #050505, inset 0 2px 4px rgba(0,0,0,.6)}
+  .tema[aria-pressed="true"]{color:var(--fg);border-color:#FFD700;box-shadow:0 3px 0 #050505, inset 0 1px 0 rgba(255,255,255,.14)}
+  .tema .amostra{
+    width:100%;height:26px;border-radius:7px;border:1px solid #00000055;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;
+  }
+
   .opcional{margin-top:10px}
   .link{
     background:none;border:0;padding:4px 6px;cursor:pointer;
@@ -274,6 +295,11 @@
   </div>
 </footer>
 
+<div class="linha topo-tema">
+  <button type="button" class="link" id="btTema" aria-expanded="false" aria-controls="temas">tema: Terminal</button>
+</div>
+<div class="temas" id="temas" hidden></div>
+
 <div class="rotulo">Mensagem</div>
 <textarea id="msg" placeholder="Digite sua mensagem aqui..." spellcheck="false" autocapitalize="sentences"></textarea>
 
@@ -364,6 +390,17 @@
   var btnWipe = $("wipe");
 
   var current = null;
+
+  /* paletas da imagem gerada: preto no branco e papel ficam em escala de cinza,
+     por isso continuam saindo no PNG leve */
+  var TEMAS = [
+    { id: "terminal", nome: "Terminal", fundo: "#000000", texto: "#ffffff" },
+    { id: "papel",    nome: "Papel",    fundo: "#ffffff", texto: "#111111" },
+    { id: "fosforo",  nome: "Fósforo",  fundo: "#001208", texto: "#4ade80" },
+    { id: "ambar",    nome: "Âmbar",    fundo: "#0d0800", texto: "#ffb000" },
+    { id: "noturno",  nome: "Noturno",  fundo: "#0a1628", texto: "#cfe4ff" }
+  ];
+  var tema = TEMAS[0];
   var foto = null;          // { fonte, larg, alt, url } da foto anexada, quando houver   // { blob, url, name }
 
   /* ---------- rascunho ---------- */
@@ -452,7 +489,7 @@
 
     c.width = W; c.height = H;
     g = c.getContext("2d");
-    g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+    g.fillStyle = tema.fundo; g.fillRect(0, 0, W, H);
 
     if (foto) {
       // preenche todo o quadro sem distorcer (recorta o excedente)
@@ -473,7 +510,7 @@
 
     g.font = fontSize + "px " + FONT;
     g.textBaseline = "top";
-    g.fillStyle = "#fff";
+    g.fillStyle = foto ? "#ffffff" : tema.texto;        // sobre foto, branco lê melhor
     if (foto) {                                        // contorno suave contra fundos claros
       g.shadowColor = "rgba(0,0,0,.85)";
       g.shadowBlur = 10;
@@ -610,6 +647,49 @@
       btnGen.disabled = false;
     });
   }
+
+  /* ---------- temas ---------- */
+  var caixaTemas = $("temas"), btTema = $("btTema");
+
+  function aplicarTema(t) {
+    tema = t;
+    try { localStorage.setItem("tema", t.id); } catch (e) {}
+    btTema.textContent = "tema: " + t.nome;
+    [].forEach.call(caixaTemas.children, function (b) {
+      b.setAttribute("aria-pressed", b.dataset.id === t.id ? "true" : "false");
+    });
+    if (current) generate();
+  }
+
+  TEMAS.forEach(function (t) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "tema";
+    b.dataset.id = t.id;
+    b.setAttribute("aria-pressed", "false");
+    var am = document.createElement("span");
+    am.className = "amostra";
+    am.style.background = t.fundo;
+    am.style.color = t.texto;
+    am.textContent = "Aa";
+    b.appendChild(am);
+    b.appendChild(document.createTextNode(t.nome));
+    b.addEventListener("click", function () { aplicarTema(t); });
+    caixaTemas.appendChild(b);
+  });
+
+  btTema.addEventListener("click", function () {
+    var abrir = caixaTemas.hidden;
+    caixaTemas.hidden = !abrir;
+    btTema.setAttribute("aria-expanded", abrir ? "true" : "false");
+  });
+
+  (function () {                                        // retoma a escolha anterior
+    var salvo;
+    try { salvo = localStorage.getItem("tema"); } catch (e) {}
+    var achado = TEMAS.filter(function (t) { return t.id === salvo; })[0];
+    aplicarTema(achado || TEMAS[0]);
+  })();
 
   /* ---------- foto de fundo ---------- */
   var arquivo = $("arquivo"), mini = $("mini"), faixaFoto = $("faixaFoto"), btnTirar = $("tirar");
