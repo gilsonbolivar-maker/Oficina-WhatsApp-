@@ -59,6 +59,21 @@ Para publicar uma versão nova, mude `VERSAO` em `sw.js` (ex.: `-v2`) — assim 
 | `manifest.webmanifest` | Nome, cores e ícones do app instalado |
 | `icons/` | Ícones 192, 512 (também *maskable*) e 180 (iOS) |
 
+## Temas
+
+O botão **tema**, no topo, abre cinco paletas para a imagem gerada:
+
+| Tema | Fundo | Texto | Peso |
+|---|---|---|---|
+| Terminal | preto | branco | leve (PNG 4-bit) |
+| Papel | branco | preto | leve (PNG 4-bit) |
+| Fósforo | verde escuro | verde | PNG colorido |
+| Âmbar | quase preto | âmbar | PNG colorido |
+| Noturno | azul escuro | azul claro | PNG colorido |
+
+A escolha fica salva no navegador. A interface do app permanece escura; o tema
+vale para a imagem que você envia.
+
 ## Foto de fundo
 
 **Anexar foto** usa a imagem escolhida como fundo, com o texto e os emojis por cima:
