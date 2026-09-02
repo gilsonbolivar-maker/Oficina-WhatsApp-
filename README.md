@@ -107,3 +107,11 @@ mantém o dourado da marca.
 - Emojis: barra de atalho abaixo da caixa e seletor completo no botão **mais** — mais de 600 emojis em oito categorias, inseridos na posição do cursor. O teclado do aparelho também funciona. Quando a mensagem tem cor, a imagem sai como PNG colorido (mais pesado); sem cor, continua no PNG de 4 bits em escala de cinza.
 - O rascunho fica salvo no navegador (`localStorage`) até ser substituído.
 - **apagar tudo**: limpa o texto, o rascunho salvo e a imagem gerada. Pede confirmação em dois toques (o botão vira *apagar mesmo?* por 4 segundos).
+
+## Licença
+
+© 2026 Pixel Nexo. Todos os direitos reservados. Veja [LICENSE](LICENSE) — o código
+está publicado para hospedar o aplicativo, não para uso, cópia ou redistribuição.
+
+Componentes de terceiros: nenhuma biblioteca é usada. A fonte JetBrains Mono é
+carregada do Google Fonts sob a SIL Open Font License, que permite uso comercial.
