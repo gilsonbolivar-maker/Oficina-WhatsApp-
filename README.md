@@ -59,6 +59,17 @@ Para publicar uma versão nova, mude `VERSAO` em `sw.js` (ex.: `-v2`) — assim 
 | `manifest.webmanifest` | Nome, cores e ícones do app instalado |
 | `icons/` | Ícones 192, 512 (também *maskable*) e 180 (iOS) |
 
+## Foto de fundo
+
+**Anexar foto** usa a imagem escolhida como fundo, com o texto e os emojis por cima:
+
+- A foto preenche o quadro sem distorcer (o excedente é recortado) e recebe um escurecimento
+  de 45%, com sombra atrás do texto — assim o branco lê mesmo sobre áreas claras.
+- **topo / centro / rodapé** escolhem onde o bloco de texto fica.
+- Com foto, a imagem sai em **JPEG** (qualidade 0,85), muito menor que um PNG de fotografia;
+  sem foto, continua no PNG leve de sempre.
+- **remover foto** volta ao fundo preto.
+
 ## Detalhes
 
 - **Nada sai do aparelho**: a imagem é gerada localmente; não há backend nem rastreamento. A única requisição externa é a fonte (Google Fonts), que fica em cache depois da primeira visita.
