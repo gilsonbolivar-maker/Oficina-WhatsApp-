@@ -450,6 +450,20 @@
   }
   loadPlanes(); setInterval(loadPlanes, 60000);
 
+  // ===== fix: maps can init with wrong size if CSS/fonts load late =====
+  function fixMapSizes(){
+    [rainMap, issMap, planeMap].forEach(function(m){
+      try { m.invalidateSize(); } catch(e){}
+    });
+  }
+  window.addEventListener("load", fixMapSizes);
+  setTimeout(fixMapSizes, 300);
+  setTimeout(fixMapSizes, 1200);
+  setTimeout(fixMapSizes, 3000);
+  document.addEventListener("visibilitychange", function(){
+    if (!document.hidden) fixMapSizes();
+  });
+
 })();
 </script>
 </body>
