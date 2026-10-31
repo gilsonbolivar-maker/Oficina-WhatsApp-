@@ -103,6 +103,7 @@
 
   .mapbox{height:220px;border-radius:8px;overflow:hidden;border:1px solid var(--line);position:relative;background:#0a111c;}
   .mapbox .leaflet-container{background:#0a111c;font-family:var(--font-body);}
+  .mapbox .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55);}
 
   /* wind compass */
   .compass-wrap{display:flex;align-items:center;gap:18px;}
@@ -126,7 +127,7 @@
   table.flist th{text-align:left;color:var(--muted);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:0 6px 6px;border-bottom:1px solid var(--line);}
   table.flist td{padding:7px 6px;border-bottom:1px solid rgba(23,41,60,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   table.flist tr:last-child td{border-bottom:none;}
-  .empty-note{color:var(--muted);font-family:var(--font-mono);font-size:11.5px;padding:10px 2px;}
+  .empty-note{color:var(--muted);font-family:var(--font-mono);font-size:11.5px;padding:10px 2px;white-space:normal;}
 
   .pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10.5px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);}
   .pill.on{color:#4ade80;border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.08);}
@@ -274,10 +275,10 @@
   var TZ = "America/Bahia";
 
   function $(id){ return document.getElementById(id); }
-  function setStatus(el, ok){
+  function setStatus(el, ok, label){
     el.classList.remove("live","err");
     el.classList.add(ok ? "live" : "err");
-    el.querySelector("span:last-child").textContent = ok ? "ao vivo" : "falha";
+    el.querySelector("span:last-child").textContent = label || (ok ? "ao vivo" : "falha");
   }
   function toRad(d){ return d*Math.PI/180; }
   function haversine(lat1,lon1,lat2,lon2){
@@ -300,7 +301,6 @@
   tickClock(); setInterval(tickClock,1000);
 
   // ===== WIND / RAIN (Open-Meteo) =====
-  var rainChart = { labels: [], values: [] };
   function loadWeather(){
     var url = "https://api.open-meteo.com/v1/forecast?latitude="+LAT+"&longitude="+LON+
       "&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m"+
@@ -347,13 +347,15 @@
   }
   loadWeather(); setInterval(loadWeather, 10*60*1000);
 
+  // ===== map tiles: OpenStreetMap standard, no key, darkened via CSS filter =====
+  var OSM_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+  var OSM_OPTS = { maxZoom: 19, subdomains: "abc" };
+
   // ===== RAIN RADAR MAP (RainViewer) =====
   var rainMap = L.map("rain-map", {zoomControl:false, attributionControl:false}).setView([LAT,LON], 6);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    maxZoom: 12, subdomains: "abcd"
-  }).addTo(rainMap);
+  L.tileLayer(OSM_URL, OSM_OPTS).addTo(rainMap);
   L.circleMarker([LAT,LON], {radius:5, color:"#4ade80", fillColor:"#4ade80", fillOpacity:1, weight:2}).addTo(rainMap).bindPopup("Caetité, BA");
-  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap, CARTO, RainViewer").addTo(rainMap);
+  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap, RainViewer").addTo(rainMap);
   var radarLayer = null;
   function loadRadar(){
     fetch("https://api.rainviewer.com/public/weather-maps.json")
@@ -363,7 +365,7 @@
       if (!frames.length) throw new Error("sem frames");
       var last = frames[frames.length-1];
       if (radarLayer) rainMap.removeLayer(radarLayer);
-      radarLayer = L.tileLayer(d.host + last.path + "/256/{z}/{x}/{y}/2/1_1.png", {opacity:.65, maxZoom:12});
+      radarLayer = L.tileLayer(d.host + last.path + "/256/{z}/{x}/{y}/2/1_1.png", {opacity:.8, maxZoom:12});
       radarLayer.addTo(rainMap);
       $("rain-frame").textContent = new Date(last.time*1000).toLocaleTimeString("pt-BR",{timeZone:TZ});
     })
@@ -373,10 +375,8 @@
 
   // ===== ISS MAP =====
   var issMap = L.map("iss-map", {zoomControl:false, attributionControl:false}).setView([0,0], 1);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    maxZoom: 7, subdomains: "abcd"
-  }).addTo(issMap);
-  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap, CARTO").addTo(issMap);
+  L.tileLayer(OSM_URL, Object.assign({}, OSM_OPTS, {maxZoom:7})).addTo(issMap);
+  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap").addTo(issMap);
   L.circleMarker([LAT,LON], {radius:4, color:"#4ade80", fillColor:"#4ade80", fillOpacity:1, weight:2}).addTo(issMap).bindPopup("Caetité, BA");
   var issIcon = L.divIcon({
     className:"iss-icon", html:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M4 4l3.5 3.5M20 4l-3.5 3.5M4 20l3.5-3.5M20 20l-3.5-3.5"/></svg>',
@@ -401,10 +401,8 @@
 
   // ===== PLANES (OpenSky) =====
   var planeMap = L.map("plane-map", {zoomControl:false, attributionControl:false}).setView([LAT,LON], 7);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    maxZoom: 12, subdomains: "abcd"
-  }).addTo(planeMap);
-  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap, CARTO, OpenSky Network").addTo(planeMap);
+  L.tileLayer(OSM_URL, OSM_OPTS).addTo(planeMap);
+  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap, OpenSky Network").addTo(planeMap);
   L.circleMarker([LAT,LON], {radius:5, color:"#4ade80", fillColor:"#4ade80", fillOpacity:1, weight:2}).addTo(planeMap).bindPopup("Caetité, BA");
   var planeMarkers = [];
   function planeIcon(track){
@@ -446,7 +444,12 @@
       }
       setStatus($("plane-status"), true);
     })
-    .catch(function(e){ setStatus($("plane-status"), false); console.error("planes", e); });
+    .catch(function(e){
+      setStatus($("plane-status"), false, "sem acesso");
+      var tbody = $("plane-tbody");
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-note">A OpenSky Network está recusando consultas anônimas no momento (exige cadastro gratuito de API). O mapa e o restante do painel continuam funcionando normalmente.</td></tr>';
+      console.error("planes", e);
+    });
   }
   loadPlanes(); setInterval(loadPlanes, 60000);
 
