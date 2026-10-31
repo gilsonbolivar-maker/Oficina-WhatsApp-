@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Central de Monitoramento — Caetité</title>
+<meta name="description" content="Vento, chuva, aviões e satélites ao vivo próximo a Caetité, BA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+  /* ===== tokens ===== */
+  /* layout: fixed header bar (coords + clock) over a 2-col/1-col responsive grid of instrument panels, HUD/radar aesthetic */
+  :root{
+    --bg:#050a12;
+    --panel:#0b1420;
+    --panel-2:#0e1826;
+    --line:#17293c;
+    --fg:#dfe9f2;
+    --muted:#6f8aa0;
+    --accent:#3fd7c4;
+    --wind:#5ec8f2;
+    --rain:#4ade80;
+    --sat:#c084fc;
+    --plane:#fbbf24;
+    --warn:#f87171;
+    --font-display:'Oswald',system-ui,sans-serif;
+    --font-body:'IBM Plex Sans',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);}
+  body{
+    font-family:var(--font-body);
+    font-size:14px;
+    line-height:1.5;
+    background:
+      radial-gradient(ellipse 900px 500px at 20% -10%, rgba(63,215,196,.08), transparent 60%),
+      radial-gradient(ellipse 900px 600px at 100% 0%, rgba(192,132,252,.06), transparent 60%),
+      var(--bg);
+    padding-left:max(16px, env(safe-area-inset-left, 0px));
+    padding-right:max(16px, env(safe-area-inset-right, 0px));
+  }
+  img{max-width:100%;}
+  [hidden]{display:none!important;}
+  a{color:var(--accent);}
+
+  .wrap{max-width:1280px;margin:0 auto;padding-bottom:48px;}
+
+  /* header */
+  header.top{
+    position:sticky;top:env(safe-area-inset-top,0px);z-index:40;
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;
+    padding:16px 0 14px;
+    border-bottom:1px solid var(--line);
+    background:rgba(5,10,18,.86);backdrop-filter:blur(10px);
+  }
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:41;background:var(--bg);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(63,215,196,.18);animation:pulse 2.2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .brand h1{font-family:var(--font-display);font-weight:600;font-size:19px;letter-spacing:.3px;margin:0;text-transform:uppercase;}
+  .brand .loc{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);}
+  .clock{text-align:right;font-family:var(--font-mono);}
+  .clock .t{font-size:20px;font-weight:700;letter-spacing:.5px;font-variant-numeric:tabular-nums;}
+  .clock .d{font-size:11px;color:var(--muted);text-transform:capitalize;}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:20px;}
+  @media (max-width:860px){.grid{grid-template-columns:1fr;}}
+
+  .panel{
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    display:flex;flex-direction:column;
+    min-width:0;
+  }
+  .panel .phead{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:13px 16px;border-bottom:1px solid var(--line);
+  }
+  .phead .ptitle{display:flex;align-items:center;gap:9px;}
+  .phead .ptitle .ic{width:18px;height:18px;flex:none;}
+  .phead h2{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin:0;}
+  .phead .sub{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);}
+  .status{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+  .status .sd{width:6px;height:6px;border-radius:50%;background:#374a5c;}
+  .status.live .sd{background:#4ade80;box-shadow:0 0 0 2px rgba(74,222,128,.2);}
+  .status.err .sd{background:var(--warn);}
+
+  .pbody{padding:16px;display:flex;flex-direction:column;gap:14px;flex:1;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .stat{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;}
+  .stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .stat .val{font-family:var(--font-mono);font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stat .val small{font-size:11px;color:var(--muted);font-weight:500;}
+
+  .mapbox{height:220px;border-radius:8px;overflow:hidden;border:1px solid var(--line);position:relative;background:#0a111c;}
+  .mapbox .leaflet-container{background:#0a111c;font-family:var(--font-body);}
+
+  /* wind compass */
+  .compass-wrap{display:flex;align-items:center;gap:18px;}
+  .compass{width:116px;height:116px;border-radius:50%;border:1px solid var(--line);position:relative;flex:none;background:radial-gradient(circle at 50% 50%, rgba(94,200,242,.08), transparent 70%);}
+  .compass .ring{position:absolute;inset:14px;border-radius:50%;border:1px dashed #1c3042;}
+  .compass .tick{position:absolute;left:50%;top:3px;width:1px;height:7px;background:#2a4357;transform-origin:50% 55px;}
+  .compass .lab{position:absolute;font-family:var(--font-mono);font-size:9.5px;color:var(--muted);}
+  .compass .needle{position:absolute;left:50%;top:50%;width:3px;height:42px;background:linear-gradient(var(--wind),transparent);transform-origin:50% 100%;margin-left:-1.5px;margin-top:-42px;border-radius:2px;}
+  .compass .needle::before{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid var(--wind);}
+  .compass .center{position:absolute;left:50%;top:50%;width:8px;height:8px;background:var(--wind);border-radius:50%;margin:-4px 0 0 -4px;box-shadow:0 0 10px var(--wind);}
+  .wind-read{font-family:var(--font-mono);}
+  .wind-read .big{font-size:30px;font-weight:700;color:var(--wind);}
+  .wind-read .unit{font-size:13px;color:var(--muted);}
+  .wind-read .dir{font-size:12px;color:var(--fg);margin-top:4px;}
+
+  .bars{display:flex;align-items:flex-end;gap:3px;height:60px;}
+  .bars .bar{flex:1;background:var(--rain);opacity:.85;border-radius:2px 2px 0 0;min-height:2px;}
+  .bars-labels{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9.5px;color:var(--muted);margin-top:4px;}
+
+  table.flist{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:11.5px;}
+  table.flist th{text-align:left;color:var(--muted);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:0 6px 6px;border-bottom:1px solid var(--line);}
+  table.flist td{padding:7px 6px;border-bottom:1px solid rgba(23,41,60,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  table.flist tr:last-child td{border-bottom:none;}
+  .empty-note{color:var(--muted);font-family:var(--font-mono);font-size:11.5px;padding:10px 2px;}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10.5px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);}
+  .pill.on{color:#4ade80;border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.08);}
+  .pill.off{color:var(--muted);}
+
+  footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:11.5px;font-family:var(--font-mono);display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;}
+  footer a{color:var(--muted);text-decoration:underline;}
+
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0e1826;color:var(--fg);}
+  .leaflet-popup-content{font-family:var(--font-mono);font-size:11.5px;margin:9px 11px;}
+  .leaflet-container a.leaflet-popup-close-button{color:var(--muted);}
+
+  .plane-icon{filter:drop-shadow(0 0 4px rgba(251,191,36,.7));}
+  .iss-icon{filter:drop-shadow(0 0 6px rgba(192,132,252,.8));}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="dot"></span>
+      <div>
+        <h1>Central de Monitoramento</h1>
+        <div class="loc">14.0694° S · 42.4825° O — CAETITÉ / BA</div>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="t" id="clock-time">--:--:--</div>
+      <div class="d" id="clock-date">—</div>
+    </div>
+  </header>
+
+  <section class="grid">
+
+    <!-- VENTO -->
+    <article class="panel">
+      <div class="phead">
+        <div class="ptitle">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#5ec8f2" stroke-width="1.8"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 13h15a3 3 0 1 1-3 3"/><path d="M3 18h8a2.3 2.3 0 1 1-2.3 2.3"/></svg>
+          <div><h2>Vento</h2><div class="sub">Open‑Meteo · superfície</div></div>
+        </div>
+        <span class="status" id="wind-status"><span class="sd"></span><span>conectando</span></span>
+      </div>
+      <div class="pbody">
+        <div class="compass-wrap">
+          <div class="compass" id="compass">
+            <div class="ring"></div>
+            <div class="needle" id="wind-needle"></div>
+            <div class="center"></div>
+            <span class="lab" style="top:4px;left:50%;transform:translateX(-50%);">N</span>
+            <span class="lab" style="bottom:4px;left:50%;transform:translateX(-50%);">S</span>
+            <span class="lab" style="left:4px;top:50%;transform:translateY(-50%);">O</span>
+            <span class="lab" style="right:4px;top:50%;transform:translateY(-50%);">L</span>
+          </div>
+          <div class="wind-read">
+            <div><span class="big" id="wind-speed">--</span><span class="unit"> km/h</span></div>
+            <div class="dir" id="wind-dir">aguardando dados…</div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><div class="lbl">Rajada</div><div class="val" id="wind-gust">-- <small>km/h</small></div></div>
+          <div class="stat"><div class="lbl">Temp.</div><div class="val" id="wind-temp">-- <small>°C</small></div></div>
+          <div class="stat"><div class="lbl">Umidade</div><div class="val" id="wind-hum">-- <small>%</small></div></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CHUVA -->
+    <article class="panel">
+      <div class="phead">
+        <div class="ptitle">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.8"><path d="M7 17a5 5 0 0 1 1-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 7.9"/><path d="M8 19l-1 2M12 19l-1 2M16 19l-1 2"/></svg>
+          <div><h2>Chuva</h2><div class="sub">RainViewer · radar de precipitação</div></div>
+        </div>
+        <span class="status" id="rain-status"><span class="sd"></span><span>conectando</span></span>
+      </div>
+      <div class="pbody">
+        <div class="mapbox" id="rain-map"></div>
+        <div class="stat-row">
+          <div class="stat"><div class="lbl">Agora</div><div class="val" id="rain-now">-- <small>mm</small></div></div>
+          <div class="stat"><div class="lbl">Prob. 3h</div><div class="val" id="rain-prob">-- <small>%</small></div></div>
+          <div class="stat"><div class="lbl">Frame radar</div><div class="val" id="rain-frame" style="font-size:12px;">--</div></div>
+        </div>
+        <div>
+          <div class="bars" id="rain-bars"></div>
+          <div class="bars-labels" id="rain-bars-labels"></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SATÉLITES -->
+    <article class="panel">
+      <div class="phead">
+        <div class="ptitle">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.8"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M4 4l3.5 3.5M20 4l-3.5 3.5M4 20l3.5-3.5M20 20l-3.5-3.5"/></svg>
+          <div><h2>Satélites</h2><div class="sub">wheretheiss.at · ISS em tempo real</div></div>
+        </div>
+        <span class="status" id="iss-status"><span class="sd"></span><span>conectando</span></span>
+      </div>
+      <div class="pbody">
+        <div class="mapbox" id="iss-map"></div>
+        <div class="stat-row">
+          <div class="stat"><div class="lbl">Distância</div><div class="val" id="iss-dist">-- <small>km</small></div></div>
+          <div class="stat"><div class="lbl">Altitude</div><div class="val" id="iss-alt">-- <small>km</small></div></div>
+          <div class="stat"><div class="lbl">Veloc.</div><div class="val" id="iss-vel">-- <small>km/h</small></div></div>
+        </div>
+        <div class="empty-note">Catálogo completo de satélites (passagens visíveis) exige chave gratuita da N2YO — a ISS é exibida sem necessidade de chave.</div>
+      </div>
+    </article>
+
+    <!-- AVIÕES -->
+    <article class="panel">
+      <div class="phead">
+        <div class="ptitle">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8"><path d="M2 16l20-6-3 8-5-2-3 4-2-1 1-4-8-3z"/></svg>
+          <div><h2>Aviões</h2><div class="sub">OpenSky Network · raio ~170 km</div></div>
+        </div>
+        <span class="status" id="plane-status"><span class="sd"></span><span>conectando</span></span>
+      </div>
+      <div class="pbody">
+        <div class="mapbox" id="plane-map"></div>
+        <div id="plane-table-wrap">
+          <table class="flist">
+            <thead><tr><th>Voo</th><th>Alt.</th><th>Vel.</th><th>Dist.</th></tr></thead>
+            <tbody id="plane-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <footer>
+    <span>Atualização automática · vento/chuva 10 min · aviões 60 s · ISS 5 s</span>
+    <span>Fontes: Open‑Meteo, RainViewer, OpenSky Network, wheretheiss.at, OpenStreetMap</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var LAT = -14.0694, LON = -42.4825;
+  var TZ = "America/Bahia";
+
+  function $(id){ return document.getElementById(id); }
+  function setStatus(el, ok){
+    el.classList.remove("live","err");
+    el.classList.add(ok ? "live" : "err");
+    el.querySelector("span:last-child").textContent = ok ? "ao vivo" : "falha";
+  }
+  function toRad(d){ return d*Math.PI/180; }
+  function haversine(lat1,lon1,lat2,lon2){
+    var R=6371;
+    var dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+    var a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+  function compassDir(deg){
+    var dirs=["N","NNE","NE","ENE","L","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];
+    return dirs[Math.round(deg/22.5)%16];
+  }
+
+  // ===== clock =====
+  function tickClock(){
+    var now=new Date();
+    $("clock-time").textContent = now.toLocaleTimeString("pt-BR",{timeZone:TZ});
+    $("clock-date").textContent = now.toLocaleDateString("pt-BR",{timeZone:TZ,weekday:"long",day:"2-digit",month:"long"});
+  }
+  tickClock(); setInterval(tickClock,1000);
+
+  // ===== WIND / RAIN (Open-Meteo) =====
+  var rainChart = { labels: [], values: [] };
+  function loadWeather(){
+    var url = "https://api.open-meteo.com/v1/forecast?latitude="+LAT+"&longitude="+LON+
+      "&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m"+
+      "&hourly=precipitation_probability&timezone=auto&forecast_days=1";
+    fetch(url).then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json(); })
+    .then(function(d){
+      var c = d.current;
+      $("wind-speed").textContent = Math.round(c.wind_speed_10m);
+      $("wind-dir").textContent = compassDir(c.wind_direction_10m) + " · " + Math.round(c.wind_direction_10m) + "°";
+      $("wind-gust").innerHTML = Math.round(c.wind_gusts_10m) + " <small>km/h</small>";
+      $("wind-temp").innerHTML = c.temperature_2m.toFixed(1) + " <small>°C</small>";
+      $("wind-hum").innerHTML = Math.round(c.relative_humidity_2m) + " <small>%</small>";
+      $("wind-needle").style.transform = "rotate(" + c.wind_direction_10m + "deg)";
+      setStatus($("wind-status"), true);
+      $("rain-now").innerHTML = c.precipitation.toFixed(1) + " <small>mm</small>";
+
+      var nowISO = d.current.time;
+      var idx = d.hourly.time.indexOf(nowISO);
+      if (idx < 0) idx = 0;
+      var probs = d.hourly.precipitation_probability.slice(idx, idx+8);
+      var times = d.hourly.time.slice(idx, idx+8);
+      $("rain-prob").innerHTML = (probs[1] != null ? probs[1] : probs[0]) + " <small>%</small>";
+      var barsEl = $("rain-bars"), labEl = $("rain-bars-labels");
+      barsEl.innerHTML = ""; labEl.innerHTML = "";
+      probs.forEach(function(p, i){
+        var b = document.createElement("div");
+        b.className = "bar";
+        b.style.height = Math.max(2, p) + "%";
+        b.title = p + "%";
+        barsEl.appendChild(b);
+        if (i % 2 === 0){
+          var lab = document.createElement("span");
+          lab.textContent = times[i].slice(11,16);
+          labEl.appendChild(lab);
+        }
+      });
+      setStatus($("rain-status"), true);
+    })
+    .catch(function(e){
+      setStatus($("wind-status"), false);
+      setStatus($("rain-status"), false);
+      console.error("weather", e);
+    });
+  }
+  loadWeather(); setInterval(loadWeather, 10*60*1000);
+
+  // ===== RAIN RADAR MAP (RainViewer) =====
+  var rainMap = L.map("rain-map", {zoomControl:false, attributionControl:false}).setView([LAT,LON], 6);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 12, subdomains: "abcd"
+  }).addTo(rainMap);
+  L.circleMarker([LAT,LON], {radius:5, color:"#4ade80", fillColor:"#4ade80", fillOpacity:1, weight:2}).addTo(rainMap).bindPopup("Caetité, BA");
+  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap, CARTO, RainViewer").addTo(rainMap);
+  var radarLayer = null;
+  function loadRadar(){
+    fetch("https://api.rainviewer.com/public/weather-maps.json")
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var frames = d.radar && d.radar.past ? d.radar.past : [];
+      if (!frames.length) throw new Error("sem frames");
+      var last = frames[frames.length-1];
+      if (radarLayer) rainMap.removeLayer(radarLayer);
+      radarLayer = L.tileLayer(d.host + last.path + "/256/{z}/{x}/{y}/2/1_1.png", {opacity:.65, maxZoom:12});
+      radarLayer.addTo(rainMap);
+      $("rain-frame").textContent = new Date(last.time*1000).toLocaleTimeString("pt-BR",{timeZone:TZ});
+    })
+    .catch(function(e){ console.error("radar", e); });
+  }
+  loadRadar(); setInterval(loadRadar, 10*60*1000);
+
+  // ===== ISS MAP =====
+  var issMap = L.map("iss-map", {zoomControl:false, attributionControl:false}).setView([0,0], 1);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 7, subdomains: "abcd"
+  }).addTo(issMap);
+  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap, CARTO").addTo(issMap);
+  L.circleMarker([LAT,LON], {radius:4, color:"#4ade80", fillColor:"#4ade80", fillOpacity:1, weight:2}).addTo(issMap).bindPopup("Caetité, BA");
+  var issIcon = L.divIcon({
+    className:"iss-icon", html:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M4 4l3.5 3.5M20 4l-3.5 3.5M4 20l3.5-3.5M20 20l-3.5-3.5"/></svg>',
+    iconSize:[22,22], iconAnchor:[11,11]
+  });
+  var issMarker = L.marker([0,0], {icon: issIcon}).addTo(issMap);
+  function loadISS(){
+    fetch("https://api.wheretheiss.at/v1/satellites/25544")
+    .then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json(); })
+    .then(function(d){
+      issMarker.setLatLng([d.latitude, d.longitude]);
+      issMarker.bindPopup("ISS · " + d.latitude.toFixed(2) + ", " + d.longitude.toFixed(2));
+      var dist = haversine(LAT, LON, d.latitude, d.longitude);
+      $("iss-dist").innerHTML = Math.round(dist).toLocaleString("pt-BR") + " <small>km</small>";
+      $("iss-alt").innerHTML = Math.round(d.altitude) + " <small>km</small>";
+      $("iss-vel").innerHTML = Math.round(d.velocity).toLocaleString("pt-BR") + " <small>km/h</small>";
+      setStatus($("iss-status"), true);
+    })
+    .catch(function(e){ setStatus($("iss-status"), false); console.error("iss", e); });
+  }
+  loadISS(); setInterval(loadISS, 5000);
+
+  // ===== PLANES (OpenSky) =====
+  var planeMap = L.map("plane-map", {zoomControl:false, attributionControl:false}).setView([LAT,LON], 7);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 12, subdomains: "abcd"
+  }).addTo(planeMap);
+  L.control.attribution({position:"bottomright", prefix:false}).addAttribution("© OpenStreetMap, CARTO, OpenSky Network").addTo(planeMap);
+  L.circleMarker([LAT,LON], {radius:5, color:"#4ade80", fillColor:"#4ade80", fillOpacity:1, weight:2}).addTo(planeMap).bindPopup("Caetité, BA");
+  var planeMarkers = [];
+  function planeIcon(track){
+    return L.divIcon({
+      className:"plane-icon",
+      html:'<svg width="20" height="20" viewBox="0 0 24 24" fill="#fbbf24" stroke="#1a1200" stroke-width=".5" style="transform:rotate('+track+'deg)"><path d="M2 16l20-6-3 8-5-2-3 4-2-1 1-4-8-3z"/></svg>',
+      iconSize:[20,20], iconAnchor:[10,10]
+    });
+  }
+  function loadPlanes(){
+    var pad = 1.6;
+    var url = "https://opensky-network.org/api/states/all?lamin="+(LAT-pad)+"&lomin="+(LON-pad)+"&lamax="+(LAT+pad)+"&lomax="+(LON+pad);
+    fetch(url).then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json(); })
+    .then(function(d){
+      planeMarkers.forEach(function(m){ planeMap.removeLayer(m); });
+      planeMarkers = [];
+      var states = (d.states || []).filter(function(s){ return s[5] != null && s[6] != null; });
+      states.forEach(function(s){
+        var lon=s[5], lat=s[6], track=s[10]||0;
+        var m = L.marker([lat,lon], {icon: planeIcon(track)}).addTo(planeMap);
+        m.bindPopup((s[1]||"desconhecido").trim() + "<br>Alt: " + (s[7]!=null?Math.round(s[7])+" m":"—") + "<br>Vel: " + (s[9]!=null?Math.round(s[9]*3.6)+" km/h":"—"));
+        planeMarkers.push(m);
+      });
+      states.forEach(function(s){ s._dist = haversine(LAT,LON,s[6],s[5]); });
+      states.sort(function(a,b){ return a._dist - b._dist; });
+      var tbody = $("plane-tbody");
+      tbody.innerHTML = "";
+      if (!states.length){
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-note">Nenhuma aeronave rastreada na área agora.</td></tr>';
+      } else {
+        states.slice(0,6).forEach(function(s){
+          var tr = document.createElement("tr");
+          tr.innerHTML = "<td>"+((s[1]||s[0]||"—").trim())+"</td>"+
+            "<td>"+(s[7]!=null?Math.round(s[7])+" m":"—")+"</td>"+
+            "<td>"+(s[9]!=null?Math.round(s[9]*3.6)+" km/h":"—")+"</td>"+
+            "<td>"+Math.round(s._dist)+" km</td>";
+          tbody.appendChild(tr);
+        });
+      }
+      setStatus($("plane-status"), true);
+    })
+    .catch(function(e){ setStatus($("plane-status"), false); console.error("planes", e); });
+  }
+  loadPlanes(); setInterval(loadPlanes, 60000);
+
+})();
+</script>
+</body>
+</html>
