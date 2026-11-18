@@ -58,6 +58,7 @@ Para publicar uma versão nova, mude `VERSAO` em `sw.js` (ex.: `-v2`) — assim 
 | `.nojekyll` | Desliga o processamento do Jekyll na publicação |
 | `manifest.webmanifest` | Nome, cores e ícones do app instalado |
 | `icons/` | Ícones 192, 512 (também *maskable*) e 180 (iOS) |
+| `retratos/` | Retratos da Erika (384 px), usados como foto de perfil |
 
 ## Temas
 
@@ -84,6 +85,18 @@ vale para a imagem que você envia.
 - Com foto, a imagem sai em **JPEG** (qualidade 0,85), muito menor que um PNG de fotografia;
   sem foto, continua no PNG leve de sempre.
 - **remover foto** volta ao fundo preto.
+
+## Cartão com foto de perfil
+
+A faixa **Foto de perfil** coloca um retrato circular, com aro dourado, ao lado do texto — nos tamanhos P, M e G e em todos os temas. O **nome no cartão** (ex.: `Erika · PixelNexo`) é opcional e sai acima da mensagem.
+
+Há nove retratos prontos da Erika: Sorrindo (o padrão), Brava, Alegre, Curiosa, Surpresa, Pensativa, Triste, Agradecida e Neutra. **Minha foto** continua aceitando uma imagem do aparelho. **Sem foto** tira o retrato e a imagem volta ao texto sozinho. A escolha e o nome ficam salvos neste aparelho. **Apagar tudo** continua limpando só o texto, o rascunho e a imagem gerada. Os retratos também ficam no cache do app, para a foto de perfil funcionar offline.
+
+## Logo PixelNexo
+
+**+ logo PixelNexo (opcional)** desenha a mesma marca do cabeçalho no canto inferior direito. No tema Papel e sobre foto de fundo, a marca entra num selo escuro para continuar legível. A escolha fica salva.
+
+Sem foto de perfil e sem logo, a imagem sai como antes.
 
 ## Aparência do app
 
