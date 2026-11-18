@@ -1,14 +1,24 @@
 /* Service worker: deixa o app abrir offline depois da primeira visita.
    Estratégia: cache primeiro para os arquivos do app (são estáticos e pequenos);
    a rede só é usada para preencher o cache e para as fontes do Google. */
-var VERSAO = "imagem-messenger-v26";
+var VERSAO = "imagem-messenger-v27";
 var ARQUIVOS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
-  "./icons/icon-180.png"
+  "./icons/icon-180.png",
+  "./retratos/dados.js",
+  "./retratos/sorrindo.jpg",
+  "./retratos/brava.jpg",
+  "./retratos/alegre.jpg",
+  "./retratos/curiosa.jpg",
+  "./retratos/surpresa.jpg",
+  "./retratos/pensativa.jpg",
+  "./retratos/triste.jpg",
+  "./retratos/agradecida.jpg",
+  "./retratos/neutra.jpg"
 ];
 
 self.addEventListener("install", function (e) {
